@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>数学侦探：失落定理 — 终极版</title>
+<style>
+:root{--bg:#06080f;--panel:#0d1117;--card:#161b22;--gold:#f0c060;--gold2:#e09030;--blue:#58a6ff;--green:#3fb950;--red:#f85149;--purple:#bc8cff;--cyan:#39d2c0;--text:#e6edf3;--text2:#8b949e;--border:#21262d;--accent:#6e40c9;--warn:#d2991b;--radius:12px;--radius-sm:6px;--font:'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-tap-highlight-color:transparent}
+#game{position:relative;width:100%;height:100%}
+canvas{display:block;position:absolute;top:0;left:0;z-index:1}
+#ui-layer{position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;pointer-events:none}
+#ui-layer>*{pointer-events:auto}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeInLeft{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px rgba(240,192,96,.3)}50%{box-shadow:0 0 20px rgba(240,192,96,.6)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-12px)}60%{transform:translateY(-4px)}}
+@keyframes starPop{0%{transform:scale(0) rotate(-30deg)}60%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes ripple{0%{box-shadow:0 0 0 0 rgba(99,102,241,.4)}100%{box-shadow:0 0 0 20px rgba(99,102,241,0)}}
+@keyframes rain{0%{transform:translateY(-10px);opacity:1}100%{transform:translateY(100vh);opacity:0}}
+@keyframes cgFade{0%{opacity:0}20%{opacity:1}80%{opacity:1}100%{opacity:0}}
+@keyframes cgZoom{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes cgFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
+@keyframes cgGlow{0%,100%{text-shadow:0 0 10px rgba(240,192,96,.4)}50%{text-shadow:0 0 30px rgba(240,192,96,.9),0 0 60px rgba(240,192,96,.4)}}
+@keyframes typewriter{from{width:0}to{width:100%}}
+
+.fade-in{animation:fadeIn .4s ease}.fade-up{animation:fadeUp .5s ease}.slide-in{animation:slideIn .4s ease}.pulse{animation:pulse 2s infinite}.bounce{animation:bounce .6s ease}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:14px;font-weight:600;transition:all .25s;font-family:var(--font);position:relative;overflow:hidden}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.15)}.btn:active{transform:translateY(0)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#553098);color:#fff;box-shadow:0 4px 15px rgba(110,64,201,.3)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1a1a;box-shadow:0 4px 15px rgba(240,192,96,.3)}
+.btn-outline{background:transparent;border:2px solid var(--accent);color:var(--accent)}
+.btn-sm{padding:6px 14px;font-size:12px}
+#top-bar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:linear-gradient(180deg,rgba(0,0,0,.85),transparent);z-index:20}
+#top-bar .title{font-size:16px;font-weight:700;color:var(--gold);letter-spacing:1px}
+#top-bar .info{display:flex;gap:12px;align-items:center;font-size:11px;color:var(--text2)}
+.mastery-ring{width:36px;height:36px;border-radius:50%;border:3px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:var(--panel);transition:border-color .5s}
+
+/* Home */
+#home-ui{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center}
+#home-ui .hero{padding-top:44px;text-align:center;animation:fadeUp .6s ease}
+#home-ui .hero h1{font-size:36px;background:linear-gradient(135deg,var(--gold),#e09030,#f0c060);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+#home-ui .hero .sub{color:var(--text2);font-size:13px;margin-bottom:16px}
+#chapter-scroll{flex:1;overflow-y:auto;padding:8px 16px 100px;width:100%;max-width:860px}
+#chapter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;justify-items:center}
+.chapter-card{width:100%;max-width:190px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+.chapter-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--c-color,#444)}
+.chapter-card:hover{transform:translateY(-4px);box-shadow:0 8px 30px rgba(99,102,241,.2);border-color:var(--c-color,#6366f1)}
+.chapter-card.completed{opacity:.9}.chapter-card.locked{opacity:.35;cursor:not-allowed;filter:grayscale(.6)}.chapter-card.locked:hover{transform:none;box-shadow:none;border-color:var(--border)}
+.chapter-card .c-icon{font-size:34px;margin-bottom:6px}.chapter-card .c-name{font-size:14px;font-weight:700}.chapter-card .c-desc{font-size:10px;color:var(--text2);line-height:1.3}
+.chapter-card .c-stars{color:var(--gold);font-size:12px;margin-top:4px}.chapter-card .c-badge{position:absolute;top:6px;right:6px;font-size:10px;background:var(--accent);color:#fff;padding:1px 7px;border-radius:8px}
+#home-ui .bottom-nav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:20px;padding:12px;background:linear-gradient(0deg,var(--panel) 60%,transparent);z-index:15}
+.nav-btn{text-align:center;cursor:pointer;color:var(--text2);font-size:11px;transition:all .2s;padding:5px 8px;border-radius:8px}.nav-btn:hover{color:var(--gold);background:rgba(240,192,96,.08)}
+.nav-btn .nav-icon{font-size:20px;display:block;margin-bottom:1px}.nav-btn .nav-badge{font-size:9px;background:var(--red);color:#fff;padding:1px 5px;border-radius:6px;margin-left:3px}
+
+/* Character portraits (CSS art) */
+.portrait{display:inline-block;width:50px;height:50px;border-radius:50%;position:relative;flex-shrink:0;border:2px solid var(--border)}
+.portrait.lg{width:80px;height:80px}.portrait.xl{width:100px;height:100px}
+.portrait.p-main{background:linear-gradient(135deg,#1a3a5c,#2a6090);box-shadow:0 0 15px rgba(88,166,255,.3)}
+.portrait.p-main::after{content:'🧑';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px}
+.portrait.p-ouluo{background:linear-gradient(135deg,#3a3a3a,#6a6a6a);box-shadow:0 0 15px rgba(192,192,192,.3)}
+.portrait.p-ouluo::after{content:'👨‍🏫';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px}
+.portrait.p-linche{background:linear-gradient(135deg,#1a4a4a,#2a7a7a);box-shadow:0 0 15px rgba(57,210,192,.3)}
+.portrait.p-linche::after{content:'🧑‍💻';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px}
+.portrait.p-aye{background:linear-gradient(135deg,#4a2a1a,#7a4a2a);box-shadow:0 0 15px rgba(210,153,27,.3)}
+.portrait.p-aye::after{content:'👩‍💼';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px}
+.portrait.p-lixia{background:linear-gradient(135deg,#3a1a5a,#6a2a9a);box-shadow:0 0 15px rgba(188,140,255,.3)}
+.portrait.p-lixia::after{content:'👩';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px}
+.portrait.p-keke{background:linear-gradient(135deg,#4a4a4a,#8a8a8a);box-shadow:0 0 15px rgba(200,200,200,.3)}
+.portrait.p-keke::after{content:'🐕';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:26px}
+.portrait.p-hermo{background:linear-gradient(135deg,#1a1a1a,#3a3a00);box-shadow:0 0 15px rgba(240,192,96,.2)}
+.portrait.p-hermo::after{content:'👤';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px}
+.portrait.p-saiyin{background:linear-gradient(135deg,#0a1a3a,#1a3a6a);box-shadow:0 0 15px rgba(100,160,255,.3)}
+.portrait.p-saiyin::after{content:'👨‍⚖️';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px}
+
+/* Dialog */
+#dialog-overlay{position:absolute;bottom:0;left:0;right:0;top:0;display:none;z-index:30;background:rgba(0,0,0,.45);align-items:flex-end;justify-content:center}
+#dialog-box{width:94%;max-width:660px;background:rgba(13,17,23,.97);border:1px solid var(--border);border-radius:18px 18px 0 0;padding:18px 22px;animation:fadeUp .3s ease;box-shadow:0 -4px 30px rgba(0,0,0,.6);max-height:70vh;overflow-y:auto}
+#dialog-box .d-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+#dialog-box .d-speaker{font-size:13px;color:var(--gold);font-weight:700}
+#dialog-box .d-text{font-size:15px;line-height:1.75;margin:4px 0 14px;color:var(--text)}
+#dialog-box .d-text .highlight{color:var(--gold);font-weight:600}
+#dialog-box .d-choices{display:flex;gap:8px;flex-wrap:wrap}
+
+/* CG overlay */
+#cg-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:none;z-index:25;background:#000}
+#cg-canvas{width:100%;height:100%}
+#cg-text{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);color:#fff;font-size:18px;text-align:center;z-index:26;pointer-events:none;animation:cgFade 2s ease infinite;text-shadow:0 0 20px rgba(240,192,96,.6)}
+#cg-skip{position:absolute;bottom:20px;right:20px;z-index:27;color:var(--text2);font-size:12px;cursor:pointer;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:6px}
+
+/* Level */
+#level-ui{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column}
+#level-header{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:rgba(0,0,0,.8);z-index:5}
+#level-main{display:flex;flex:1;overflow:hidden}
+#level-canvas-wrap{flex:1;position:relative;overflow:hidden;min-width:0}
+#level-canvas-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1}
+#level-panel{width:260px;background:var(--panel);border-left:1px solid var(--border);padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+#level-footer{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;background:rgba(0,0,0,.8);z-index:5}
+
+.evidence-card{background:var(--card);border:2px solid var(--border);border-radius:10px;padding:9px 11px;cursor:pointer;font-size:12px;transition:all .2s;display:flex;align-items:center;gap:7px}
+.evidence-card:hover{border-color:var(--blue);background:#1a2030}.evidence-card.selected{border-color:var(--gold)!important;background:#1a1a2e!important;animation:glow 1.5s infinite}
+.chain-slot{min-height:48px;border:2px dashed var(--border);border-radius:10px;padding:7px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;transition:all .3s}
+.chain-slot.highlight{border-color:var(--gold)!important;background:rgba(240,192,96,.05)}.chain-slot .slot-label{color:var(--text2);font-size:10px}
+.chain-step{background:linear-gradient(135deg,var(--accent),#553098);color:#fff;padding:6px 10px;border-radius:6px;font-size:11px;display:flex;align-items:center;gap:5px;animation:slideIn .3s ease}
+.chain-step .remove{cursor:pointer;opacity:.6}.chain-step .remove:hover{opacity:1}
+.param-slider{margin-bottom:2px}.param-slider label{font-size:10px;color:var(--text2);display:flex;justify-content:space-between}
+.param-slider input[type=range]{width:100%;accent-color:var(--accent);height:6px}
+.param-display{background:var(--card);border-radius:8px;padding:8px;text-align:center;font-size:16px;font-weight:700;color:var(--cyan);font-family:'Consolas',monospace}
+.hint-box{background:rgba(210,153,27,.1);border:1px solid var(--warn);border-radius:8px;padding:7px 10px;font-size:11px;color:var(--warn);animation:fadeIn .3s ease}
+
+.overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.82);display:none;z-index:40;align-items:center;justify-content:center}
+.overlay-card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:26px 32px;text-align:center;max-width:400px;width:90%;animation:fadeUp .4s ease;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.overlay-card h2{font-size:19px;margin-bottom:10px}.overlay-card .stars-display{font-size:40px;margin:10px 0}.overlay-card .star{display:inline-block;animation:starPop .5s ease backwards}.overlay-card .feedback{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px}.overlay-card .mastery-change{font-size:12px;color:var(--green);margin-bottom:14px}.overlay-card .error-type{display:inline-block;padding:3px 9px;border-radius:10px;font-size:10px;background:rgba(248,81,73,.15);color:var(--red);margin-bottom:8px}
+
+.chapter-intro-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);display:none;z-index:35;align-items:center;justify-content:center;flex-direction:column;text-align:center}
+.chapter-intro-overlay .ci-char{font-size:70px;margin-bottom:10px}.chapter-intro-overlay .ci-title{font-size:24px;color:var(--gold);margin:8px 0}.chapter-intro-overlay .ci-sub{font-size:14px;color:var(--text2);max-width:500px;line-height:1.7;margin-bottom:14px}.chapter-intro-overlay .ci-info{font-size:11px;color:var(--text2);margin-bottom:4px}
+
+.achievement-toast{position:fixed;top:55px;right:14px;z-index:50;background:var(--panel);border:2px solid var(--gold);border-radius:10px;padding:10px 14px;animation:slideIn .4s ease,fadeOut2 .5s 2.5s ease forwards;display:flex;align-items:center;gap:8px;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:280px}
+@keyframes fadeOut2{to{opacity:0;transform:translateX(40px)}}
+.achievement-toast .ach-icon{font-size:28px}.achievement-toast .ach-title{font-size:12px;font-weight:700;color:var(--gold)}.achievement-toast .ach-desc{font-size:10px;color:var(--text2)}
+
+.full-panel{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);display:none;z-index:35;overflow-y:auto;padding:50px 16px 80px}
+.full-panel .panel-inner{max-width:680px;margin:0 auto}.full-panel h2{text-align:center;color:var(--gold);margin-bottom:18px;font-size:20px}
+.knowledge-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;transition:all .2s}.knowledge-item:hover{border-color:var(--accent)}
+.knowledge-item .k-bar{flex:1;max-width:100px;height:7px;background:var(--border);border-radius:3px;overflow:hidden}.knowledge-item .k-bar-fill{height:100%;border-radius:3px;transition:width .5s}
+
+.story-scene{position:absolute;top:0;left:0;width:100%;height:100%;display:none;z-index:28;align-items:center;justify-content:center}
+.story-scene .scene-bg{position:absolute;top:0;left:0;width:100%;height:100%;background-size:cover;background-position:center;opacity:.4}
+.story-scene .scene-content{position:relative;z-index:1;text-align:center;max-width:600px;padding:30px}
+.story-scene .scene-title{font-size:28px;color:var(--gold);margin-bottom:12px;animation:fadeUp .6s ease}
+.story-scene .scene-text{font-size:16px;color:var(--text);line-height:2;animation:fadeUp .6s .2s ease backwards}
+.story-scene .scene-chars{display:flex;gap:20px;justify-content:center;margin:20px 0;animation:fadeUp .6s .3s ease backwards}
+
+@media(max-width:768px){#level-main{flex-direction:column}#level-canvas-wrap{flex:none;height:260px}#level-panel{width:100%;max-height:180px;flex-direction:row;flex-wrap:wrap;gap:5px;overflow-y:auto}#chapter-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}.chapter-card{padding:12px 8px}#home-ui .hero h1{font-size:24px}.portrait.lg{width:60px;height:60px}.portrait.xl{width:80px;height:80px}}
+</style>
+</head>
+<body>
+<div id="game">
+<canvas id="gameCanvas"></canvas>
+<div id="ui-layer">
+<div id="top-bar"><div class="title">🔍 数学侦探<span style="font-weight:400;font-size:12px;color:var(--text2)">失落定理</span></div><div class="info"><span>⭐<b id="total-stars">0</b></span><span>💎<b id="total-dust">0</b></span><span>🏆<b id="total-ach">0</b></span><div class="mastery-ring" id="mastery-ring">0%</div></div></div>
+
+<div id="home-ui">
+<div class="hero"><h1>数学侦探：失落定理</h1><div class="sub">数学之城陷入危机，定理晶核裂开了……</div><button class="btn btn-gold" onclick="Game.continueOrStart()" style="font-size:15px;padding:10px 24px">▶ 开始调查</button><button class="btn btn-outline btn-sm" onclick="Game.quickLevel()" style="margin-left:6px">⚡快速挑战</button></div>
+<div id="chapter-scroll"><div id="chapter-grid"></div></div>
+<div class="bottom-nav"><div class="nav-btn" onclick="Game.showPage('home')"><span class="nav-icon">🏠</span>主城</div><div class="nav-btn" onclick="Game.showMistakes()"><span class="nav-icon">📋</span>错题<span class="nav-badge" id="mistake-count">0</span></div><div class="nav-btn" onclick="Game.showAchievements()"><span class="nav-icon">🏆</span>成就</div><div class="nav-btn" onclick="Game.showKnowledge()"><span class="nav-icon">📖</span>图鉴</div><div class="nav-btn" onclick="Game.showPage('home')"><span class="nav-icon">🎒</span>装备</div><div class="nav-btn" onclick="Game.resetProgress()"><span class="nav-icon">⚙️</span>设置</div></div></div>
+
+<div id="dialog-overlay" onclick="Game.advanceDialog(event)"><div id="dialog-box"></div></div>
+
+<div id="cg-overlay"><canvas id="cg-canvas"></canvas><div id="cg-text"></div><div id="cg-skip" onclick="Game.skipCG()">跳过 ⏭</div></div>
+
+<div id="level-ui"><div id="level-header"><span class="lvl-name" id="lvl-name"></span><span class="lvl-obj" id="lvl-obj"></span><button class="btn btn-outline btn-sm" onclick="Game.exitLevel()">✕</button></div><div id="level-main"><div id="level-canvas-wrap"></div><div id="level-panel"></div></div><div id="level-footer"><button class="btn btn-outline btn-sm" id="hint-btn" onclick="Game.useHint()">💡提示</button><button class="btn btn-outline btn-sm" id="math-eye-btn" onclick="Game.toggleMathEye()">👁数学之眼</button><button class="btn btn-outline btn-sm" onclick="Game.resetLevel()">🔄重置</button><button class="btn btn-primary" id="submit-btn" onclick="Game.submitLevel()">✓提交</button></div></div>
+
+<div class="overlay" id="result-overlay"><div class="overlay-card"><h2 id="result-title"></h2><div class="stars-display" id="result-stars"></div><div class="error-type" id="result-error-type" style="display:none"></div><p class="feedback" id="result-feedback"></p><p class="mastery-change" id="result-mastery"></p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-gold" onclick="Game.closeResult()">继续调查</button><button class="btn btn-outline btn-sm" id="retry-btn" onclick="Game.retryLevel()" style="display:none">🔄重试</button></div></div></div>
+
+<div class="chapter-intro-overlay" id="chapter-intro"><div class="ci-char" id="ci-char"></div><div class="ci-title" id="ci-title"></div><div class="ci-sub" id="ci-sub"></div><div class="ci-info" id="ci-info"></div><button class="btn btn-gold" onclick="Game.closeChapterIntro()">进入章节</button><button class="btn btn-outline btn-sm" onclick="Game.skipToHome()" style="margin-top:4px">返回主城</button></div>
+
+<div class="full-panel" id="knowledge-panel"><div class="panel-inner"><h2>📖 知识图鉴</h2><div id="knowledge-tree"></div><div style="text-align:center;margin-top:14px"><button class="btn btn-outline" onclick="document.getElementById('knowledge-panel').style.display='none'">关闭</button></div></div></div>
+<div class="full-panel" id="mistakes-panel"><div class="panel-inner"><h2>📋 错题回廊</h2><p id="no-mistakes-msg" style="text-align:center;color:var(--text2)">暂无错题记录</p><div id="mistakes-list"></div><div style="text-align:center;margin-top:14px"><button class="btn btn-outline" onclick="document.getElementById('mistakes-panel').style.display='none'">关闭</button></div></div></div>
+<div class="full-panel" id="achievements-panel"><div class="panel-inner"><h2>🏆 成就</h2><div id="achievements-list"></div><div style="text-align:center;margin-top:14px"><button class="btn btn-outline" onclick="document.getElementById('achievements-panel').style.display='none'">关闭</button></div></div></div>
+<div id="toast-container" style="position:fixed;top:55px;right:14px;z-index:50;display:flex;flex-direction:column;gap:6px"></div>
+</div></div>
+<script>
+// ==================== 音效系统 ====================
+const Sound={ctx:null,init(){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}},play(f,t,d,v=.08){if(!this.ctx)return;try{const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(v,this.ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,this.ctx.currentTime+d);o.connect(g);g.connect(this.ctx.destination);o.start();o.stop(this.ctx.currentTime+d)}catch(e){}},click(){this.play(800,'sine',.08,.03)},success(){this.play(523,'sine',.12,.06);setTimeout(()=>this.play(659,'sine',.12,.06),100);setTimeout(()=>this.play(784,'sine',.15,.08),200)},fail(){this.play(200,'triangle',.2,.04);setTimeout(()=>this.play(160,'triangle',.25,.05),120)},hint(){this.play(440,'sine',.1,.04);setTimeout(()=>this.play(550,'sine',.1,.04),80)},star(){this.play(1047,'sine',.15,.08)},achieve(){this.play(660,'sine',.1,.05);setTimeout(()=>this.play(880,'sine',.12,.06),100);setTimeout(()=>this.play(1100,'sine',.15,.08),200)},slide(){this.play(300,'sine',.06,.02)},cgBeep(){this.play(330,'sine',.08,.02)}};
+
+// ==================== 成就 & 错误标签 & 知识树 ====================
+const ACHIEVEMENTS=[{id:'first_evidence',name:'第一条证据',desc:'完成首个证据链',icon:'🔗',check:p=>p.totalStars>=1},{id:'no_skip',name:'不跳步侦探',desc:'连续3关无提示三星通关',icon:'🎯',check:p=>(p.noHintStreak||0)>=3},{id:'slope_master',name:'斜率驾驶员',desc:'一次函数章节全部通关',icon:'🚂',check:p=>(p.mastery?.ch1?.completed||0)>=5},{id:'triangle_crafter',name:'三角桥匠',desc:'几何遗迹章节通关',icon:'🔺',check:p=>(p.mastery?.ch2?.completed||0)>=5},{id:'ssa_catcher',name:'反例发现者',desc:'识破SSA陷阱',icon:'⚠️',check:p=>(p.ssaCaught||0)>=1},{id:'shadow_measurer',name:'影塔测量师',desc:'完成相似测量关卡',icon:'📐',check:p=>(p.mastery?.ch4?.completed||0)>=3},{id:'const_keeper',name:'恒积守护者',desc:'反比例函数章节通关',icon:'🌊',check:p=>(p.mastery?.ch5?.completed||0)>=3},{id:'vertex_hunter',name:'顶点猎手',desc:'二次函数最值连续正确',icon:'🦅',check:p=>(p.vertexStreak||0)>=2},{id:'mistake_fixer',name:'错题修复师',desc:'完成10次错题复盘',icon:'🔧',check:p=>(p.mistakesFixed||0)>=10},{id:'explainer',name:'讲给别人听',desc:'写出完整理由5次',icon:'📝',check:p=>(p.explanationCount||0)>=5},{id:'star20',name:'星辰收集者',desc:'累计获得20颗星',icon:'⭐',check:p=>p.totalStars>=20},{id:'star50',name:'星空探索者',desc:'累计获得50颗星',icon:'🌟',check:p=>p.totalStars>=50},{id:'math_eye_master',name:'数学之眼',desc:'使用数学之眼30次',icon:'👁',check:p=>(p.mathEyeUses||0)>=30},{id:'speed_prover',name:'速证者',desc:'30秒内三星通关',icon:'⚡',check:p=>(p.speedClears||0)>=3},{id:'full_clear',name:'定理守护者',desc:'全部章节完成',icon:'💎',check:p=>{for(let i=0;i<7;i++)if((p.mastery?.['ch'+i]?.completed||0)<1)return false;return true}},{id:'dust100',name:'碎片收集家',desc:'积累100个知识星尘',icon:'💠',check:p=>p.dust>=100},{id:'dust500',name:'晶核富翁',desc:'积累500个知识星尘',icon:'👑',check:p=>p.dust>=500},{id:'chapter0',name:'序章：觉醒',desc:'完成序章全部调查',icon:'🌧️',check:p=>(p.mastery?.ch0?.completed||0)>=5},{id:'chapter6',name:'抛物线征服者',desc:'完成抛物线峡谷',icon:'🦅',check:p=>(p.mastery?.ch6?.completed||0)>=4}];
+const ERROR_LABELS={condition_missing:'条件遗漏',correspondence_error:'对应关系错误',concept_confusion:'概念混淆',calculation_error:'计算失误',model_error:'模型选择错误',domain_missing:'取值范围遗漏',expression_gap:'表达不完整',jump_step:'推理跳步'};
+const KNOWLEDGE_TREE=[{code:'T1',name:'认识三角形',desc:'顶点、边、角、分类',group:'几何'},{code:'T2',name:'三边关系',desc:'两边之和大于第三边',group:'几何'},{code:'T3',name:'内角和与外角',desc:'内角和180°,外角性质',group:'几何'},{code:'T4',name:'重要线段',desc:'高、中线、角平分线',group:'几何'},{code:'T5',name:'全等直观',desc:'完全重合、对应边角',group:'几何'},{code:'T6',name:'全等判定',desc:'SSS/SAS/ASA/AAS/HL',group:'几何'},{code:'T7',name:'证明表达',desc:'已知-求证-证明链',group:'几何'},{code:'T8',name:'等腰三角形',desc:'等边对等角、三线合一',group:'几何'},{code:'T9',name:'勾股定理',desc:'a²+b²=c²',group:'几何'},{code:'T10',name:'垂平/角平分线',desc:'点到两端/两边距离相等',group:'几何'},{code:'T11',name:'相似三角形',desc:'AA/SAS/SSS相似',group:'几何'},{code:'T12',name:'几何综合',desc:'全等+相似+勾股+坐标',group:'几何'},{code:'F0',name:'变量意识',desc:'自变量、因变量',group:'函数'},{code:'F1',name:'表格表示',desc:'输入输出、找规律',group:'函数'},{code:'F2',name:'关系式表示',desc:'用式子表达变化',group:'函数'},{code:'F3',name:'图像表示',desc:'坐标点、趋势、交点',group:'函数'},{code:'F4',name:'一次函数概念',desc:'y=kx+b',group:'函数'},{code:'F5',name:'一次函数图像',desc:'斜率、截距、增减性',group:'函数'},{code:'F6',name:'一次函数应用',desc:'路程、费用、方案比较',group:'函数'},{code:'F7',name:'反比例函数概念',desc:'y=k/x,xy=k',group:'函数'},{code:'F8',name:'反比例函数图像',desc:'双曲线、象限、增减性',group:'函数'},{code:'F9',name:'反比例应用',desc:'工程、速度时间、压力',group:'函数'},{code:'F10',name:'二次函数概念',desc:'y=ax²+bx+c',group:'函数'},{code:'F11',name:'二次函数图像',desc:'开口、对称轴、顶点、最值',group:'函数'},{code:'F12',name:'表达式确定',desc:'一般式/顶点式/交点式',group:'函数'},{code:'F13',name:'二次函数应用',desc:'最大利润/面积/运动',group:'函数'},{code:'F14',name:'函数综合',desc:'多表示方式切换',group:'函数'}];
+
+// ==================== 剧情对话数据库 ====================
+const STORY={
+
+opening:[
+{speaker:'??',char:'none',text:'（雨点打在窗户上，作业本上的草稿纸被洇湿了一角……）'},
+{speaker:'??',char:'none',text:'（铅笔画出的三角形忽然发出一道微弱的金色光芒）'},
+{speaker:'??',char:'none',text:'「不是你不会，而是证据还没有排好。」'},
+{speaker:'主角',char:'main',text:'谁……谁在说话？我的草稿纸怎么在发光？！'},
+{speaker:'??',char:'none',text:'（三角形线稿从纸面升起，在空中旋转，变成一个发光的几何入口）'},
+{speaker:'主角',char:'main',text:'这到底是什么……？'}
+],
+
+meetOuluo:[
+{speaker:'欧若导师',char:'ouluo',text:'欢迎来到数学之城，年轻的侦探。'},
+{speaker:'欧若导师',char:'ouluo',text:'我是欧若，定理晶核的守护者。如你所见，这座城市正处于危机之中。'},
+{speaker:'主角',char:'main',text:'危机？这些发光的几何图案是什么？'},
+{speaker:'欧若导师',char:'ouluo',text:'数学之城由定理晶核维持运转。但现在——晶核裂开了。'},
+{speaker:'欧若导师',char:'ouluo',text:'列车的轨道失去了斜率，桥梁不再稳定，风轨无法引导飞行器……'},
+{speaker:'欧若导师',char:'ouluo',text:'原因很简单：十三枚关键的「证据片」失踪了。'},
+{speaker:'主角',char:'main',text:'证据片？我需要怎么做？'},
+{speaker:'欧若导师',char:'ouluo',text:'找出隐藏的已知条件，把证据正确地连成推理链。'},
+{speaker:'欧若导师',char:'ouluo',text:'记住——猜中答案像捡到一把钥匙，但证明才知道钥匙为什么能开门。'},
+{speaker:'主角',char:'main',text:'（握紧了手中的侦探笔记）我明白了。带我去调查现场吧。'}
+],
+
+meetLinche:[
+{speaker:'林澈',char:'linche',text:'哟，你就是新来的侦探？'},
+{speaker:'林澈',char:'linche',text:'我叫林澈，函数分析师。我负责看变化——把运动变成图像，把混乱变成关系式。'},
+{speaker:'主角',char:'main',text:'函数分析师是做什么的？'},
+{speaker:'林澈',char:'linche',text:'你看那些列车——它们失去了斜率，在平面上漫无目的地滑行。'},
+{speaker:'林澈',char:'linche',text:'如果变化有规律，轨道就能被写出来。y=kx+b，简单吧？'},
+{speaker:'林澈',char:'linche',text:'我负责看变化，你负责问为什么。这样我们至少有一半像专业侦探。'},
+{speaker:'主角',char:'main',text:'（笑了笑）好，我们搭档吧。'}
+],
+
+meetAye:[
+{speaker:'阿页',char:'aye',text:'侦探你好，我是阿页，错题回廊的管理员。'},
+{speaker:'阿页',char:'aye',text:'我要告诉你一件事：错误不是失败，而是城市留下的脚印。'},
+{speaker:'主角',char:'main',text:'错题回廊……是干什么用的？'},
+{speaker:'阿页',char:'aye',text:'每次你做错一道题，回廊里就会多一份调查档案。'},
+{speaker:'阿页',char:'aye',text:'它会告诉你：这个案件为什么会误导你？哪些条件没有进入证据链？'},
+{speaker:'阿页',char:'aye',text:'我不会用红叉羞辱你。我只会把错误变成新的调查线索。'},
+{speaker:'主角',char:'main',text:'所以……复习不是受挫，而是返回现场重新勘查？'},
+{speaker:'阿页',char:'aye',text:'（微笑）你理解得很快。祝调查顺利，侦探。'}
+],
+
+meetLixia:[
+{speaker:'璃夏',char:'lixia',text:'……你也能看见这些碎片吗？'},
+{speaker:'主角',char:'main',text:'你是？'},
+{speaker:'璃夏',char:'lixia',text:'我是璃夏。我不是敌人，但我也不是一个完整的……存在。'},
+{speaker:'璃夏',char:'lixia',text:'我能听见定理晶核的碎裂声。每一个被跳过的推理，每一道只想要答案的题……'},
+{speaker:'璃夏',char:'lixia',text:'它们都会在晶核上留下裂痕。但大多数人听不到这个声音。'},
+{speaker:'主角',char:'main',text:'你想让我找到失落定理的真相？'},
+{speaker:'璃夏',char:'lixia',text:'不是找到——是证明。答案会让门打开，但理由会让城市记住你来过。'},
+{speaker:'璃夏',char:'lixia',text:'（身影渐渐淡去）小心赫尔墨之影……他相信答案比理解更重要。'}
+],
+
+hermoFirst:[
+{speaker:'赫尔墨之影',char:'hermo',text:'年轻的侦探，你的速度太慢了。'},
+{speaker:'赫尔墨之影',char:'hermo',text:'为什么要纠结于每一个推理步骤？答案才是最重要的不是吗？'},
+{speaker:'主角',char:'main',text:'你是谁？'},
+{speaker:'赫尔墨之影',char:'hermo',text:'我曾是这座城市最伟大的证明师。我制造了「答案机」——'},
+{speaker:'赫尔墨之影',char:'hermo',text:'它能让学生跳过痛苦的探索，直接获得正确答案。'},
+{speaker:'赫尔墨之影',char:'hermo',text:'短期来看，所有人都很开心。长期来看……'},
+{speaker:'欧若导师',char:'ouluo',text:'长期来看，定理晶核因为缺少真实理解而变得空心。这就是裂变的原因。'},
+{speaker:'赫尔墨之影',char:'hermo',text:'欧若，你还是这么固执。证明太慢了，直接套公式吧。'},
+{speaker:'主角',char:'main',text:'不。我要自己找出原因——每一步都要有凭据。'}
+],
+
+chapterComplete:[
+{speaker:'欧若导师',char:'ouluo',text:'做得好，侦探。这枚证据片已经归位了。'},
+{speaker:'欧若导师',char:'ouluo',text:'城市的一部分正在恢复运转。你做到了——用理解，而不是用猜测。'},
+{speaker:'主角',char:'main',text:'但还有更多的证据片在外面……'},
+{speaker:'欧若导师',char:'ouluo',text:'是的。但你已经掌握了最重要的一件事：'},
+{speaker:'欧若导师',char:'ouluo',text:'数学不是冷冰冰的符号，而是让混乱世界重新变得可以理解的语言。'},
+{speaker:'主角',char:'main',text:'（翻开侦探笔记的下一页）继续调查吧。'}
+],
+
+finalChapter:[
+{speaker:'赫尔墨之影',char:'hermo',text:'你终于来了。所有证据片都在这里——'},
+{speaker:'赫尔墨之影',char:'hermo',text:'但我只需要你交出答案，不需要你解释过程。'},
+{speaker:'主角',char:'main',text:'没有过程的答案只是一堆符号。那不是数学。'},
+{speaker:'赫尔墨之影',char:'hermo',text:'你知道有多少孩子因为"必须写过程"而讨厌数学吗？'},
+{speaker:'主角',char:'main',text:'过程不是为了让人讨厌——过程是为了让人理解。'},
+{speaker:'主角',char:'main',text:'跳过理解会短暂减轻痛苦，但下一次挑战会让人更难承受。'},
+{speaker:'璃夏',char:'lixia',text:'（现身）赫尔墨，答案机必须被改造成验证器。'},
+{speaker:'璃夏',char:'lixia',text:'技巧和公式仍然有价值——但它们必须服务于理解，而不是取代理解。'},
+{speaker:'赫尔墨之影',char:'hermo',text:'……（长久的沉默）你说得对。我害怕学生在挫败中放弃，却让他们陷入了更深的恐惧。'},
+{speaker:'欧若导师',char:'ouluo',text:'失落定理从来不是某一个课本定理——'},
+{speaker:'欧若导师',char:'ouluo',text:'它是一条学习原则：结论必须有来路，方法必须能解释，错误必须能被复盘。'},
+{speaker:'主角',char:'main',text:'定理晶核——恢复了。但不是回到从前，而是变得更好。'},
+{speaker:'主角',char:'main',text:'（回到现实世界的书桌前，草稿纸上的三角形仍旧普通——但每一条线段，都像证据一样有意义）'}
+],
+
+};
+
+// CG场景定义
+const CG_SCENES={
+opening:{name:'开场：雨夜的草稿纸',duration:8000,type:'rainy_desk'},
+chapterClear:{name:'章节完成：证据片归位',duration:4000,type:'evidence_return'},
+gameEnd:{name:'真结局：错题星空',duration:7000,type:'star_sky'},
+};
+// ==================== 游戏引擎 ====================
+const Game={state:'home',currentChapter:null,currentLevelIdx:0,currentLevel:null,mathEye:false,hintsUsed:0,hintLevel:0,mistakes:[],proofChain:[],matchAnswer:null,sliderValues:{k:0,b:0,a:1,h:0,kv:1},selectedEvidence:null,levelStartTime:0,achievementsUnlocked:[],progress:{totalStars:0,dust:0,mastery:{},completedLevels:{},totalAchievements:0,noHintStreak:0,ssaCaught:0,vertexStreak:0,mistakesFixed:0,explanationCount:0,mathEyeUses:0,speedClears:0,currentNoHint:0},bgParticles:[],cgRunning:false,cgResolve:null,dialogQueue:[],dialogResolve:null,storyFlags:{seenOpening:false,metOuluo:false,metLinche:false,metAye:false,metLixia:false,seenHermo:false,completedGame:false},
+
+init(){Sound.init();this.canvas=document.getElementById('gameCanvas');this.ctx=this.canvas.getContext('2d');this.resizeCanvas();window.addEventListener('resize',()=>this.resizeCanvas());this.loadProgress();this.initBgParticles();this.renderHome();this.showPage('home');this.updateAllUI();this.animateBackground();this.checkAllAchievements();if(!this.storyFlags.seenOpening)setTimeout(()=>this.playOpeningCG(),800)},
+
+resizeCanvas(){this.canvas.width=window.innerWidth;this.canvas.height=window.innerHeight;this.initBgParticles()},
+initBgParticles(){this.bgParticles=[];for(let i=0;i<100;i++)this.bgParticles.push({x:Math.random()*this.canvas.width,y:Math.random()*this.canvas.height,r:Math.random()*2+.3,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,alpha:Math.random()*.4+.1})},
+animateBackground(){if(this.state==='level'){requestAnimationFrame(()=>this.animateBackground());return}const ctx=this.ctx,w=this.canvas.width,h=this.canvas.height;ctx.clearRect(0,0,w,h);const grad=ctx.createRadialGradient(w/2,h/3,0,w/2,h/2,w);grad.addColorStop(0,'#120830');grad.addColorStop(.5,'#06080f');grad.addColorStop(1,'#020408');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);for(const p of this.bgParticles){p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(192,160,255,'+p.alpha+')';ctx.fill()}requestAnimationFrame(()=>this.animateBackground())},
+
+// ===== CG动画系统 =====
+async playCG(type){
+  const def=CG_SCENES[type];if(!def)return;
+  this.cgRunning=true;document.getElementById('cg-overlay').style.display='block';
+  const canvas=document.getElementById('cg-canvas');canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
+  const textEl=document.getElementById('cg-text');textEl.textContent='';
+  const start=Date.now(),dur=def.duration;
+  return new Promise(resolve=>{
+    this.cgResolve=resolve;
+    const frame=()=>{
+      if(!this.cgRunning){this.endCG(resolve);return}
+      const elapsed=Date.now()-start,progress=Math.min(elapsed/dur,1);
+      ctx.clearRect(0,0,w,h);
+      if(type==='rainy_desk')this.drawCG_RainyDesk(ctx,w,h,progress);
+      else if(type==='evidence_return')this.drawCG_EvidenceReturn(ctx,w,h,progress);
+      else if(type==='star_sky')this.drawCG_StarSky(ctx,w,h,progress);
+      if(progress<1){requestAnimationFrame(frame)}else{setTimeout(()=>this.endCG(resolve),500)}
+    };
+    requestAnimationFrame(frame);
+  });
+},
+
+drawCG_RainyDesk(ctx,w,h,p){
+  // Phase 1: Dark desk with rain (p 0-0.3)
+  // Phase 2: Triangle begins to glow (p 0.3-0.5)
+  // Phase 3: City entrance appears (p 0.5-0.8)
+  // Phase 4: Fade to white (p 0.8-1.0)
+  const f=Math.min(p/0.8,1);
+  ctx.fillStyle='#050510';ctx.fillRect(0,0,w,h);
+  // Rain
+  ctx.strokeStyle='rgba(150,180,220,'+(0.5-f*0.3)+')';ctx.lineWidth=1;
+  const rainSeed=42;
+  for(let i=0;i<60;i++){
+    const rx=((i*137+rainSeed)%w),ry=((i*251+rainSeed*3+Date.now()*0.02)%h);
+    ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx-2,ry+15);ctx.stroke();
+  }
+  // Desk
+  const deskY=h*0.62;ctx.fillStyle='#1a1410';ctx.fillRect(0,deskY,w,h-deskY);
+  ctx.fillStyle='#2a2018';ctx.fillRect(w*0.2,deskY,w*0.6,4);
+  // Paper
+  if(p>0.1){
+    const alpha=Math.min((p-0.1)/0.3,1);ctx.fillStyle='rgba(240,235,220,'+alpha+')';
+    const px=w*0.25,py=deskY-80,pw=w*0.5,ph=120;
+    ctx.fillRect(px,py,pw,ph);ctx.fillStyle='rgba(200,195,180,'+alpha+')';ctx.fillRect(px+20,py+20,pw-40,1);ctx.fillRect(px+20,py+40,pw-40,1);
+    // Triangle on paper
+    if(p>0.25){
+      const ta=Math.min((p-0.25)/0.2,1);ctx.strokeStyle='rgba(30,30,30,'+ta+')';ctx.lineWidth=2+ta;
+      const cx=w*0.5,cy=deskY-35;ctx.beginPath();ctx.moveTo(cx,cy-25);ctx.lineTo(cx-35,cy+20);ctx.lineTo(cx+35,cy+20);ctx.closePath();ctx.stroke();
+      if(p>0.35){
+        const ga=Math.min((p-0.35)/0.15,1);ctx.strokeStyle='rgba(240,192,96,'+ga+')';ctx.lineWidth=3+ga*3;ctx.shadowColor='rgba(240,192,96,'+(ga*0.8)+')';ctx.shadowBlur=20*ga;
+        ctx.beginPath();ctx.moveTo(cx,cy-25);ctx.lineTo(cx-35,cy+20);ctx.lineTo(cx+35,cy+20);ctx.closePath();ctx.stroke();ctx.shadowBlur=0;
+      }
+    }
+  }
+  // City entrance glow
+  if(p>0.55){
+    const ca=Math.min((p-0.55)/0.25,1);const grad=ctx.createRadialGradient(w/2,h*0.45,0,w/2,h*0.45,300*ca);
+    grad.addColorStop(0,'rgba(240,192,96,'+(ca*0.6)+')');grad.addColorStop(1,'rgba(240,192,96,0)');
+    ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+    ctx.fillStyle='rgba(255,255,255,'+ca+')';ctx.font='bold 22px "Noto Sans SC"';ctx.textAlign='center';
+    ctx.fillText('数学之城',w/2,h*0.42);ctx.textAlign='start';
+  }
+  // Text
+  const textEl=document.getElementById('cg-text');
+  if(p<0.25)textEl.textContent='雨夜·草稿纸';
+  else if(p<0.45)textEl.textContent='三角形……在发光？';
+  else if(p<0.65)textEl.textContent='欢迎来到数学之城';
+  else textEl.textContent='定理晶核正在裂开……';
+},
+
+drawCG_EvidenceReturn(ctx,w,h,p){
+  const f=Math.min(p/0.9,1);ctx.fillStyle='#050510';ctx.fillRect(0,0,w,h);
+  for(let i=0;i<30;i++){ctx.fillStyle='rgba(240,192,96,'+(0.15+Math.sin(p*10+i)*0.1)+')';ctx.beginPath();ctx.arc(w/2+Math.cos(p*3+i)*150,h/2+Math.sin(p*3+i)*150,3,0,Math.PI*2);ctx.fill()}
+  const cr=30+Math.sin(p*8)*5;ctx.strokeStyle='rgba(240,192,96,'+f+')';ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(w/2,h/2,cr,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='rgba(240,192,96,'+f+')';ctx.font='bold 20px "Noto Sans SC"';ctx.textAlign='center';
+  ctx.fillText('证据片·归位',w/2,h/2+60);ctx.fillText('🔮',w/2,h/2+8);ctx.textAlign='start';
+  document.getElementById('cg-text').textContent='城市的一部分恢复了运转';
+},
+
+drawCG_StarSky(ctx,w,h,p){
+  ctx.fillStyle='#020410';ctx.fillRect(0,0,w,h);
+  for(let i=0;i<80;i++){
+    const sx=((i*173+13)%w),sy=((i*227+37)%h),sr=1+Math.sin(p*5+i)*1.5;
+    ctx.fillStyle='rgba(255,255,255,'+(0.3+Math.sin(p*4+i)*0.4)+')';ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
+    if(i<13){ctx.fillStyle='rgba(240,192,96,'+(0.5+Math.sin(p*3+i)*0.3)+')';ctx.beginPath();ctx.arc(sx,sy,sr*2.5,0,Math.PI*2);ctx.fill()}
+  }
+  ctx.fillStyle='rgba(255,255,255,'+Math.min(p/0.6,1)+')';ctx.font='bold 22px "Noto Sans SC"';ctx.textAlign='center';
+  ctx.fillText('错过的路，也能成为星空',w/2,h/2-40);
+  ctx.fillText('每一个错误都是理解的一部分',w/2,h/2+10);
+  ctx.fillText('🌌',w/2,h/2+50);ctx.textAlign='start';
+  document.getElementById('cg-text').textContent=p>0.5?'定理晶核·完全修复':'十三枚证据片·全部归位';
+},
+
+endCG(resolve){this.cgRunning=false;document.getElementById('cg-overlay').style.display='none';document.getElementById('cg-text').textContent='';if(resolve)resolve();if(this.cgResolve){this.cgResolve=null}},
+
+skipCG(){if(this.cgRunning){this.cgRunning=false;Sound.click()}},
+
+async playOpeningCG(){
+  this.storyFlags.seenOpening=true;this.saveProgress();
+  await this.playCG('opening');
+  await this.playDialog(STORY.opening);
+  await this.playDialog(STORY.meetOuluo);
+  this.storyFlags.metOuluo=true;this.saveProgress();
+},
+
+// ===== 对话系统 =====
+async playDialog(script){
+  if(!script||script.length===0)return;
+  return new Promise(resolve=>{
+    this.dialogQueue=script;this.dialogResolve=resolve;this.showDialogLine();
+    document.getElementById('dialog-overlay').style.display='flex';
+  });
+},
+
+showDialogLine(){
+  if(this.dialogQueue.length===0){
+    document.getElementById('dialog-overlay').style.display='none';
+    if(this.dialogResolve){const r=this.dialogResolve;this.dialogResolve=null;r()}return;
+  }
+  const line=this.dialogQueue.shift();const box=document.getElementById('dialog-box');
+  const charClass={'main':'p-main','ouluo':'p-ouluo','linche':'p-linche','aye':'p-aye','lixia':'p-lixia','keke':'p-keke','hermo':'p-hermo','saiyin':'p-saiyin'};
+  const pc=charClass[line.char]||'';
+  box.innerHTML=`
+    <div class="d-header">
+      ${line.char!=='none'?`<div class="portrait lg ${pc}"></div>`:''}
+      <div class="d-speaker">${line.speaker}</div>
+    </div>
+    <div class="d-text">${line.text}</div>
+    <div class="d-choices"><button class="btn btn-gold btn-sm" onclick="Game.showDialogLine()">继续 ▶</button></div>
+  `;
+  box.style.animation='none';box.offsetHeight;box.style.animation='fadeUp .3s ease';
+  Sound.cgBeep();
+},
+
+advanceDialog(event){
+  if(event.target===document.getElementById('dialog-overlay'))this.showDialogLine();
+},
+
+// ===== 场景管理 =====
+showPage(page){document.getElementById('home-ui').style.display=page==='home'?'flex':'none';if(page==='home'){this.state='home';this.currentChapter=null;this.renderChapterCards()}},
+renderHome(){this.renderChapterCards()},
+
+renderChapterCards(){
+  const grid=document.getElementById('chapter-grid');
+  const chapters=[{id:0,name:'序章',icon:'🌧️',desc:'雨夜的侦探笔记',know:'证据意识·变量直观',color:'#6366f1',levels:5},{id:1,name:'第一章',icon:'🚂',desc:'直线之城',know:'一次函数·斜率截距',color:'#58a6ff',levels:6},{id:2,name:'第二章',icon:'🔺',desc:'几何遗迹',know:'三角形·全等基础',color:'#3fb950',levels:6},{id:3,name:'第三章',icon:'⚖️',desc:'证明庭',know:'全等判定·证明表达',color:'#bc8cff',levels:6},{id:4,name:'第四章',icon:'📐',desc:'比例荒原',know:'相似·比例线段',color:'#d2991b',levels:5},{id:5,name:'第五章',icon:'🌊',desc:'倒影港',know:'反比例函数',color:'#39d2c0',levels:5},{id:6,name:'第六章',icon:'🦅',desc:'抛物线峡谷',know:'二次函数·顶点最值',color:'#f778ba',levels:5}];
+  const M=this.progress.mastery||{};
+  grid.innerHTML=chapters.map(ch=>{
+    const key='ch'+ch.id,chData=M[key]||{},stars=chData.stars||0,completed=chData.completed||0;
+    const locked=ch.id>0&&(M['ch'+(ch.id-1)]?.completed||0)<2;
+    return`<div class="chapter-card${locked?' locked':''}${completed>=ch.levels?' completed':''}" style="--c-color:${ch.color}" onclick="${locked?'':'Game.startChapter('+ch.id+')'}">
+      ${completed>=ch.levels?'<div class="c-badge">✓</div>':''}<div class="c-icon">${ch.icon}</div>
+      <div class="c-name">${ch.name}</div><div class="c-desc">${ch.desc}</div>
+      <div style="font-size:9px;color:var(--text2);margin-top:2px">${locked?'🔒需完成前一章':ch.know}</div>
+      <div class="c-stars">${'⭐'.repeat(Math.min(stars,3))}${stars===0?'☆':''} ${completed}/${ch.levels}关</div></div>`;
+  }).join('');
+},
+
+quickLevel(){const allLevels=[];for(let ci=0;ci<CHAPTERS.length;ci++){if(!this.isChapterUnlocked(ci))continue;const ch=CHAPTERS[ci];for(let li=0;li<ch.levels.length;li++){const key='ch'+ci+'-'+li;if(!(this.progress.completedLevels||{})[key])allLevels.push({ci,li})}}if(allLevels.length===0){const unlocked=CHAPTERS.map((_,i)=>i).filter(ci=>this.isChapterUnlocked(ci));const ci=unlocked[Math.floor(Math.random()*unlocked.length)]||0;const li=Math.floor(Math.random()*CHAPTERS[ci].levels.length);allLevels.push({ci,li})}const pick=allLevels[Math.floor(Math.random()*allLevels.length)];this.currentChapter=pick.ci;this.currentLevelIdx=pick.li;document.getElementById('chapter-intro').style.display='none';this.startLevel()},
+isChapterUnlocked(chapterId){if(chapterId<=1)return true;return(this.progress.mastery||{})['ch'+(chapterId-1)]?.completed>=2},
+
+startChapter(chapterId){
+  this.currentChapter=chapterId;const ch=CHAPTERS[chapterId];if(!ch)return;
+  document.getElementById('ci-char').textContent=ch.icon;
+  document.getElementById('ci-title').textContent=ch.name+'：'+ch.title;
+  document.getElementById('ci-sub').textContent=ch.intro;
+  document.getElementById('ci-info').textContent='📚 '+ch.knowledge+' · 🎯 '+ch.levels.length+'个关卡';
+  document.getElementById('chapter-intro').style.display='flex';Sound.click();
+  // Trigger story events
+  if(chapterId===1&&!this.storyFlags.metLinche){setTimeout(async()=>{document.getElementById('chapter-intro').style.display='none';await this.playDialog(STORY.meetLinche);this.storyFlags.metLinche=true;this.saveProgress();document.getElementById('chapter-intro').style.display='flex'},600)}
+  if(chapterId===2&&!this.storyFlags.metAye){setTimeout(async()=>{document.getElementById('chapter-intro').style.display='none';await this.playDialog(STORY.meetAye);this.storyFlags.metAye=true;this.saveProgress();document.getElementById('chapter-intro').style.display='flex'},600)}
+  if(chapterId===3&&(!this.storyFlags.metLixia||!this.storyFlags.seenHermo)){setTimeout(async()=>{const intro=document.getElementById('chapter-intro');intro.style.display='none';if(!this.storyFlags.metLixia){await this.playDialog(STORY.meetLixia);this.storyFlags.metLixia=true}if(!this.storyFlags.seenHermo){await this.playDialog(STORY.hermoFirst);this.storyFlags.seenHermo=true}this.saveProgress();intro.style.display='flex'},600)}
+},
+
+skipToHome(){document.getElementById('chapter-intro').style.display='none';this.showPage('home')},
+closeChapterIntro(){document.getElementById('chapter-intro').style.display='none';this.currentLevelIdx=0;this.startLevel();Sound.click()},
+
+startLevel(){
+  const ch=CHAPTERS[this.currentChapter];if(!ch||this.currentLevelIdx>=ch.levels.length){this.completeChapter();return}
+  const lvl=ch.levels[this.currentLevelIdx];this.currentLevel=lvl;this.mathEye=false;this.hintsUsed=0;this.hintLevel=0;this.proofChain=[];this.matchAnswer=null;this.selectedEvidence=null;
+  this.sliderValues={k:lvl.params?.k||0,b:lvl.params?.b||0,a:lvl.params?.a||1,h:lvl.params?.h||0,kv:lvl.params?.kv||1};this.levelStartTime=Date.now();
+  document.getElementById('home-ui').style.display='none';document.getElementById('level-ui').style.display='flex';
+  document.getElementById('lvl-name').innerHTML='<span style="color:var(--gold)">'+ch.icon+' '+ch.name+'</span> '+lvl.name;
+  document.getElementById('lvl-obj').textContent='🎯 '+lvl.objective;
+  document.getElementById('math-eye-btn').textContent='👁数学之眼';document.getElementById('math-eye-btn').style.borderColor='';
+  document.getElementById('hint-btn').textContent='💡提示';document.getElementById('submit-btn').disabled=false;
+  document.getElementById('retry-btn').style.display='none';this.state='level';this.renderLevel();Sound.click();
+},
+
+renderLevel(){const lvl=this.currentLevel,panel=document.getElementById('level-panel');document.getElementById('level-canvas-wrap').innerHTML='<canvas id="levelCanvas" style="width:100%;height:100%"></canvas>';if(lvl.type==='geometry_proof')this.renderGeometryProof(lvl,panel);else if(lvl.type==='function_slider')this.renderFunctionSlider(lvl,panel);else if(lvl.type==='pattern_match')this.renderPatternMatch(lvl,panel)},
+
+// Geometry proof rendering
+renderGeometryProof(lvl,panel){panel.innerHTML='<div style="font-weight:700;font-size:12px;color:var(--gold)">📋 证据卡</div><div id="evidence-cards" style="display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto"></div><div style="font-weight:700;font-size:12px;color:var(--gold);margin-top:4px">🔗 证明链</div><div class="chain-slot" id="proof-chain"><span class="slot-label">点击证据卡构建证明链...</span></div>';const order=lvl.shuffled?this.shuffle([...lvl.cards]):[...lvl.cards];document.getElementById('evidence-cards').innerHTML=order.map((c,i)=>'<div class="evidence-card" data-idx="'+i+'" data-id="'+c.id+'" onclick="Game.selectEvidence('+i+',\''+c.id+'\')"><span style="font-size:15px">'+(c.icon||'📌')+'</span><span>'+c.text+'</span></div>').join('');setTimeout(()=>this.drawGeometryCanvas(lvl),100)},
+selectEvidence(idx,id){const cards=document.querySelectorAll('#evidence-cards .evidence-card');cards.forEach(c=>c.classList.remove('selected'));if(this.selectedEvidence?.idx===idx){this.selectedEvidence=null;const ci=this.proofChain.findIndex(c=>c.id===id);if(ci>=0)this.removeFromChain(ci);Sound.click();return}cards[idx].classList.add('selected');const cardData=this.currentLevel.cards.find(c=>c.id===id);this.selectedEvidence={idx,...cardData};this.addToChain(cardData);Sound.click()},
+addToChain(card){if(!card||this.proofChain.find(c=>c.id===card.id))return;this.proofChain.push(card);this.updateProofChainDisplay();this.selectedEvidence=null;document.querySelectorAll('#evidence-cards .evidence-card').forEach(c=>c.classList.remove('selected'));Sound.slide()},
+updateProofChainDisplay(){const div=document.getElementById('proof-chain');if(this.proofChain.length===0){div.innerHTML='<span class="slot-label">点击证据卡构建证明链...</span>';return}div.innerHTML=this.proofChain.map((c,i)=>'<div class="chain-step">'+(c.icon||'📌')+' '+c.text+'<span class="remove" onclick="Game.removeFromChain('+i+')">✕</span></div>').join('');div.classList.add('highlight');setTimeout(()=>div.classList.remove('highlight'),400)},
+removeFromChain(idx){this.proofChain.splice(idx,1);this.updateProofChainDisplay();Sound.click()},
+
+// Geometry canvas drawings (abbreviated - same as before)
+drawGeometryCanvas(lvl){const wrap=document.getElementById('level-canvas-wrap');const canvas=document.getElementById('levelCanvas');if(!canvas)return;canvas.width=wrap.clientWidth;canvas.height=wrap.clientHeight;const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;ctx.fillStyle='#06080f';ctx.fillRect(0,0,w,h);ctx.strokeStyle='rgba(255,255,255,.03)';ctx.lineWidth=1;for(let x=0;x<w;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}for(let y=0;y<h;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}const f=lvl.figure;if(f==='triangle_isosceles')this.drawIsoscelesTri(ctx,w,h);else if(f==='triangle_sss')this.drawSSSTri(ctx,w,h);else if(f==='triangle_sas')this.drawSASTri(ctx,w,h);else if(f==='triangle_right')this.drawRightTri(ctx,w,h);else if(f==='similar_triangles')this.drawSimilarTri(ctx,w,h);else this.drawDefaultFig(ctx,w,h,lvl)},
+drawIsoscelesTri(ctx,w,h){const cx=w/2,cy=h/2-40,ax=cx-150,ay=cy+150,bx=cx+150,by=cy+150;ctx.strokeStyle='#58a6ff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ax,ay);ctx.lineTo(bx,by);ctx.closePath();ctx.stroke();ctx.fillStyle='#f0c060';ctx.font='bold 18px "Noto Sans SC"';ctx.fillText('A',cx,cy-15);ctx.fillText('B',ax-25,ay+25);ctx.fillText('C',bx+10,by+25);this.dTick(ctx,(cx+ax)/2,(cy+ay)/2,-1);this.dTick(ctx,(cx+bx)/2,(cy+by)/2,1);ctx.strokeStyle='#bc8cff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(ax,ay,28,-0.9,0.3);ctx.stroke();ctx.beginPath();ctx.arc(bx,by,28,2.84,4);ctx.stroke();if(this.mathEye){ctx.strokeStyle='rgba(240,192,96,.5)';ctx.lineWidth=4;ctx.setLineDash([8,5]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ax,ay);ctx.stroke();ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(bx,by);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(240,192,96,.85)';ctx.font='bold 15px "Noto Sans SC"';ctx.fillText('AB=AC',cx-70,cy+55)}ctx.fillStyle='#8b949e';ctx.font='13px "Noto Sans SC"';ctx.fillText('已知：AB=AC，AD平分∠BAC',w/2-110,h-38);ctx.fillText('求证：BD=CD',w/2-110,h-16)},
+drawSSSTri(ctx,w,h){const cx=w/2,cy=h/2-40,ax=cx-140,ay=cy+160,bx=cx+110,by=cy+160;ctx.strokeStyle='#3fb950';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ax,ay);ctx.lineTo(bx,by);ctx.closePath();ctx.stroke();ctx.fillStyle='#f0c060';ctx.font='bold 18px "Noto Sans SC"';ctx.fillText('A',cx,cy-15);ctx.fillText('B',ax-25,ay+25);ctx.fillText('C',bx+10,by+25);if(this.mathEye){ctx.strokeStyle='rgba(240,192,96,.5)';ctx.lineWidth=4;ctx.setLineDash([8,5]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ax,ay);ctx.stroke();ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(bx,by);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(240,192,96,.8)';ctx.font='bold 14px "Noto Sans SC"';ctx.fillText('三边相等→SSS',cx-60,cy+50)}ctx.fillStyle='#8b949e';ctx.font='13px "Noto Sans SC"';ctx.fillText('已知：AB=DE, BC=EF, AC=DF',w/2-105,h-38);ctx.fillText('用SSS判定△ABC≌△DEF',w/2-105,h-16)},
+drawSASTri(ctx,w,h){const cx=w/2,cy=h/2-40,ax=cx-155,ay=cy+160,bx=cx+155,by=cy+160;ctx.strokeStyle='#bc8cff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ax,ay);ctx.lineTo(bx,by);ctx.closePath();ctx.stroke();ctx.fillStyle='#f0c060';ctx.font='bold 18px "Noto Sans SC"';ctx.fillText('A',cx,cy-15);ctx.fillText('B',ax-25,ay+25);ctx.fillText('C',bx+10,by+25);ctx.strokeStyle='#3fb950';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,25,0.35,1.75);ctx.stroke();if(this.mathEye){ctx.strokeStyle='rgba(240,192,96,.5)';ctx.lineWidth=4;ctx.setLineDash([8,5]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ax,ay);ctx.stroke();ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(bx,by);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(240,192,96,.8)';ctx.font='bold 14px "Noto Sans SC"';ctx.fillText('两边+夹角→SAS',cx-55,cy+40)}ctx.fillStyle='#8b949e';ctx.font='13px "Noto Sans SC"';ctx.fillText('已知：AB=DE, ∠A=∠D, AC=DF',w/2-105,h-38);ctx.fillText('使用SAS判定全等',w/2-105,h-16)},
+drawRightTri(ctx,w,h){const ax=w/2-80,ay=h/2+100,bx=w/2-80,by=h/2-50,cx=w/2+100,cy=h/2+100;ctx.strokeStyle='#58a6ff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.lineTo(cx,cy);ctx.closePath();ctx.stroke();ctx.fillStyle='#f0c060';ctx.font='bold 18px "Noto Sans SC"';ctx.fillText('A',ax-20,ay+25);ctx.fillText('B',bx-30,by-12);ctx.fillText('C',cx+8,cy+25);ctx.strokeStyle='#f85149';ctx.lineWidth=2;ctx.beginPath();ctx.arc(ax,ay,22,-Math.PI/2,0);ctx.stroke();if(this.mathEye){ctx.fillStyle='rgba(240,192,96,.8)';ctx.font='bold 14px "Noto Sans SC"';ctx.fillText('斜边+直角边→HL',w/2-50,by-60)}ctx.fillStyle='#8b949e';ctx.font='13px "Noto Sans SC"';ctx.fillText('已知：∠C=90°, AB=DE, BC=EF',w/2-100,h-38);ctx.fillText('用HL判定Rt△ABC≌Rt△DEF',w/2-100,h-16)},
+drawSimilarTri(ctx,w,h){const ox=w*.25,oy=h*.55,ox2=w*.6;ctx.strokeStyle='#d2991b';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(ox-30,oy+80);ctx.lineTo(ox-80,oy-10);ctx.lineTo(ox+50,oy+20);ctx.closePath();ctx.stroke();ctx.strokeStyle='#f0c060';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(ox2-60,oy+160);ctx.lineTo(ox2-160,oy-20);ctx.lineTo(ox2+100,oy+40);ctx.closePath();ctx.stroke();ctx.fillStyle='#f0c060';ctx.font='bold 16px "Noto Sans SC"';ctx.fillText('△ABC',ox-50,oy-20);ctx.fillText('△DEF(2:1)',ox2-80,oy-30);if(this.mathEye){ctx.fillStyle='rgba(240,192,96,.8)';ctx.font='bold 14px "Noto Sans SC"';ctx.fillText('对应角相等·对应边成比例',w/2-80,h-40)}ctx.fillStyle='#8b949e';ctx.font='13px "Noto Sans SC"';ctx.fillText('已知：∠A=∠D, ∠B=∠E → △ABC∽△DEF',w/2-110,h-18)},
+drawDefaultFig(ctx,w,h,lvl){ctx.fillStyle='#f0c060';ctx.font='bold 20px "Noto Sans SC"';ctx.textAlign='center';ctx.fillText(lvl.question||'观察条件',w/2,h/2-10);if(lvl.subtext){ctx.fillStyle='#8b949e';ctx.font='15px "Noto Sans SC"';ctx.fillText(lvl.subtext,w/2,h/2+25)}ctx.textAlign='start'},
+dTick(ctx,x,y,side){ctx.beginPath();ctx.moveTo(x-8*side,y-14);ctx.lineTo(x,y);ctx.lineTo(x-8*side,y+14);ctx.stroke()},
+
+// Function slider
+renderFunctionSlider(lvl,panel){const isQuad=lvl.funcType==='quadratic',isInv=lvl.funcType==='inverse';panel.innerHTML='<div style="font-weight:700;font-size:12px;color:var(--gold)">🎛️ 参数调节</div><div id="slider-panel"></div><div class="param-display" id="func-display"></div>';const sp=document.getElementById('slider-panel');if(isQuad){sp.innerHTML='<div class="param-slider"><label>a(开口)<span id="val-a">'+this.sliderValues.a.toFixed(1)+'</span></label><input type="range" min="-3" max="3" step="0.1" value="'+this.sliderValues.a+'" oninput="Game.onSlider(\'a\',this.value)"></div><div class="param-slider"><label>h(左右)<span id="val-h">'+this.sliderValues.h.toFixed(1)+'</span></label><input type="range" min="-5" max="5" step="0.5" value="'+this.sliderValues.h+'" oninput="Game.onSlider(\'h\',this.value)"></div><div class="param-slider"><label>k(上下)<span id="val-k">'+this.sliderValues.k.toFixed(1)+'</span></label><input type="range" min="-5" max="5" step="0.5" value="'+this.sliderValues.k+'" oninput="Game.onSlider(\'k\',this.value)"></div>'}else if(isInv){sp.innerHTML='<div class="param-slider"><label>k(系数)<span id="val-kv">'+this.sliderValues.kv.toFixed(1)+'</span></label><input type="range" min="-8" max="8" step="0.5" value="'+this.sliderValues.kv+'" oninput="Game.onSlider(\'kv\',this.value)"></div>'}else{sp.innerHTML='<div class="param-slider"><label>k(斜率)<span id="val-k">'+this.sliderValues.k.toFixed(1)+'</span></label><input type="range" min="-4" max="4" step="0.1" value="'+this.sliderValues.k+'" oninput="Game.onSlider(\'k\',this.value)"></div><div class="param-slider"><label>b(截距)<span id="val-b">'+this.sliderValues.b.toFixed(1)+'</span></label><input type="range" min="-6" max="6" step="0.5" value="'+this.sliderValues.b+'" oninput="Game.onSlider(\'b\',this.value)"></div>'}setTimeout(()=>this.drawFunctionCanvas(lvl),100)},
+onSlider(param,value){const v=parseFloat(value);this.sliderValues[param]=v;const el=document.getElementById('val-'+param);if(el)el.textContent=v.toFixed(1);this.updateFuncDisplay(this.currentLevel.funcType);this.drawFunctionCanvas(this.currentLevel);Sound.slide()},
+updateFuncDisplay(type){const d=document.getElementById('func-display'),sv=this.sliderValues;if(type==='quadratic'){const h=sv.h,k=sv.k,a=sv.a,hs=h>=0?'-'+Math.abs(h):'+'+Math.abs(h),ks=k>=0?'+'+k.toFixed(1):'-'+Math.abs(k).toFixed(1);d.textContent='y='+a.toFixed(1)+'(x'+hs+')²'+ks}else if(type==='inverse'){d.textContent='y='+sv.kv.toFixed(1)+'/x'}else{const s=sv.b>=0?'+':'-';d.textContent='y='+sv.k.toFixed(1)+'x'+s+Math.abs(sv.b).toFixed(1)}},
+drawFunctionCanvas(lvl){const wrap=document.getElementById('level-canvas-wrap');const canvas=document.getElementById('levelCanvas');if(!canvas)return;canvas.width=wrap.clientWidth;canvas.height=wrap.clientHeight;const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;ctx.fillStyle='#06080f';ctx.fillRect(0,0,w,h);const ox=w/2,oy=h/2,scale=42;ctx.strokeStyle='rgba(255,255,255,.04)';ctx.lineWidth=1;for(let x=ox%scale;x<w;x+=scale){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}for(let y=oy%scale;y<h;y+=scale){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,oy);ctx.lineTo(w,oy);ctx.stroke();ctx.beginPath();ctx.moveTo(ox,0);ctx.lineTo(ox,h);ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(w-10,oy);ctx.lineTo(w-20,oy-6);ctx.lineTo(w-20,oy+6);ctx.fill();ctx.beginPath();ctx.moveTo(ox,10);ctx.lineTo(ox-6,20);ctx.lineTo(ox+6,20);ctx.fill();ctx.fillText('x',w-18,oy-10);ctx.fillText('y',ox+10,18);ctx.fillStyle='#8b949e';ctx.font='10px "Noto Sans SC"';for(let i=-8;i<=8;i++){if(i===0)continue;ctx.fillText(i,ox+i*scale-8,oy+16);ctx.fillText(i,ox-20,oy-i*scale+4)}ctx.fillText('O',ox-14,oy+15);const targets=lvl.targets||[];for(const t of targets){const tx=ox+t.x*scale,ty=oy-t.y*scale;ctx.fillStyle='#f0c060';ctx.beginPath();ctx.arc(tx,ty,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f0c060';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tx,ty,15,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#000';ctx.font='bold 11px "Noto Sans SC"';ctx.fillText('⭐',tx-9,ty+5);ctx.fillStyle='#f0c060';ctx.fillText('('+t.x+','+t.y+')',tx+16,ty-2)}const sv=this.sliderValues,isQuad=lvl.funcType==='quadratic',isInv=lvl.funcType==='inverse';ctx.strokeStyle='#58a6ff';ctx.lineWidth=3;ctx.beginPath();let started=false;for(let px=0;px<w;px+=1){const xVal=(px-ox)/scale;let yVal;if(isQuad)yVal=sv.a*Math.pow(xVal-sv.h,2)+sv.k;else if(isInv)yVal=xVal===0?NaN:sv.kv/xVal;else yVal=sv.k*xVal+sv.b;if(isNaN(yVal)||Math.abs(yVal)>10){started=false;continue}const py=oy-yVal*scale;if(!started){ctx.moveTo(px,py);started=true}else ctx.lineTo(px,py)}ctx.stroke();if(this.mathEye&&targets.length>0){ctx.fillStyle='rgba(240,192,96,.12)';for(const t of targets){ctx.beginPath();ctx.arc(ox+t.x*scale,oy-t.y*scale,22,0,Math.PI*2);ctx.fill()}}},
+
+// Pattern match
+renderPatternMatch(lvl,panel){panel.innerHTML='<div style="font-weight:700;font-size:12px;color:var(--gold)">🔍 选择答案</div><div id="match-options" style="display:flex;flex-direction:column;gap:7px;margin-top:4px"></div>';this.matchAnswer=null;document.getElementById('match-options').innerHTML=(lvl.options||[]).map((o,i)=>'<div class="evidence-card" onclick="Game.selectMatch('+i+')" id="match-opt-'+i+'"><span style="font-size:15px">'+(o.icon||'📌')+'</span><span>'+o.text+'</span></div>').join('');setTimeout(()=>{const wrap=document.getElementById('level-canvas-wrap');const canvas=document.getElementById('levelCanvas');if(!canvas)return;canvas.width=wrap.clientWidth;canvas.height=wrap.clientHeight;const ctx=canvas.getContext('2d');ctx.fillStyle='#06080f';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#f0c060';ctx.font='bold 20px "Noto Sans SC"';ctx.textAlign='center';ctx.fillText(lvl.question||'',canvas.width/2,canvas.height/2-15);if(lvl.subtext){ctx.fillStyle='#8b949e';ctx.font='14px "Noto Sans SC"';ctx.fillText(lvl.subtext,canvas.width/2,canvas.height/2+25)}ctx.textAlign='start'},100)},
+selectMatch(idx){document.querySelectorAll('#match-options .evidence-card').forEach(c=>c.classList.remove('selected'));document.getElementById('match-opt-'+idx).classList.add('selected');this.matchAnswer=idx;Sound.click()},
+
+// Submit & validation (abbreviated - core logic same as before)
+submitLevel(){if(this.state!=='level')return;const lvl=this.currentLevel;let correct=false,feedback='',errorType=null;if(lvl.type==='geometry_proof'){const r=this.validateProof(lvl);correct=r.correct;feedback=r.feedback;errorType=r.errorType}else if(lvl.type==='function_slider'){const r=this.validateSlider(lvl);correct=r.correct;feedback=r.feedback;errorType=r.errorType||'model_error'}else if(lvl.type==='pattern_match'){if(this.matchAnswer===null||this.matchAnswer===undefined){correct=false;feedback='请先选择一个答案再提交。';errorType='expression_gap'}else{correct=this.matchAnswer===lvl.correctIdx;feedback=correct?(lvl.successMsg||'正确！'):(lvl.failMsg||'不对，再检查条件。');if(!correct)errorType=lvl.errorType||'model_error'}}let stars=0;const elapsed=(Date.now()-this.levelStartTime)/1000;if(correct){stars=this.hintsUsed===0?3:(this.hintsUsed<=1?2:1);if(elapsed<25&&stars===3)this.progress.speedClears=(this.progress.speedClears||0)+1}if(correct){Sound.success();if(stars>=3)setTimeout(()=>Sound.star(),300)}else Sound.fail();if(correct&&this.hintsUsed===0){this.progress.currentNoHint=(this.progress.currentNoHint||0)+1;if(this.progress.currentNoHint>=(this.progress.noHintStreak||0))this.progress.noHintStreak=this.progress.currentNoHint}else if(!correct||this.hintsUsed>0)this.progress.currentNoHint=0;if(correct&&lvl.id&&lvl.id.includes('ssa'))this.progress.ssaCaught=(this.progress.ssaCaught||0)+1;if(correct&&lvl.type==='function_slider'&&lvl.funcType==='quadratic')this.progress.vertexStreak=(this.progress.vertexStreak||0)+1;else if(!correct&&lvl.type==='function_slider'&&lvl.funcType==='quadratic')this.progress.vertexStreak=0;document.getElementById('result-title').textContent=correct?'✨ 调查成功！':'🔍 需要重新调查';const starsHtml=[];for(let i=0;i<3;i++)starsHtml.push('<span class="star" style="animation-delay:'+(i*.15)+'s">'+(i<stars?'⭐':'☆')+'</span>');document.getElementById('result-stars').innerHTML=starsHtml.join('');document.getElementById('result-feedback').textContent=feedback;const errEl=document.getElementById('result-error-type');if(!correct&&errorType){errEl.style.display='inline-block';errEl.textContent='错因：'+(ERROR_LABELS[errorType]||errorType)}else errEl.style.display='none';document.getElementById('result-mastery').textContent='掌握度 '+(correct?'+':'')+(4+stars*3)+' · 星尘 '+(correct?'+'+stars*10:'+1');document.getElementById('retry-btn').style.display=correct?'none':'inline-block';document.getElementById('result-overlay').style.display='flex';if(!correct&&errorType){this.mistakes.push({level:lvl.name,chapter:CHAPTERS[this.currentChapter]?.name||'',errorType,timestamp:new Date().toLocaleString(),feedback,chapterId:this.currentChapter,levelIdx:this.currentLevelIdx})}if(correct){const chKey='ch'+this.currentChapter;if(!this.progress.mastery)this.progress.mastery={};if(!this.progress.mastery[chKey])this.progress.mastery[chKey]={stars:0,completed:0};const cm=this.progress.mastery[chKey];if(stars>cm.stars)cm.stars=stars;const lvlKey=chKey+'-'+this.currentLevelIdx;if(!this.progress.completedLevels)this.progress.completedLevels={};const prevStars=this.progress.completedLevels[lvlKey]||0;if(stars>prevStars)this.progress.completedLevels[lvlKey]=stars;if(!prevStars)cm.completed=(cm.completed||0)+1;this.progress.totalStars=(this.progress.totalStars||0)+Math.max(0,stars-prevStars);this.progress.dust=(this.progress.dust||0)+stars*10;if(stars>=3&&this.hintsUsed===0)this.progress.explanationCount=(this.progress.explanationCount||0)+1;if(this._retryingMistake){this.progress.mistakesFixed=(this.progress.mistakesFixed||0)+1;this._retryingMistake=false}}else{this.progress.dust=(this.progress.dust||0)+1}this.saveProgress();this.updateAllUI();this.checkAllAchievements()},
+
+validateProof(lvl){const chain=this.proofChain||[],expected=lvl.expectedChain||[];if(chain.length===0)return{correct:false,feedback:'证明链为空。请选择证据卡构建推理过程。',errorType:'expression_gap'};if(chain.length!==expected.length){const missing=expected.filter(id=>!chain.find(c=>c.id===id));if(missing.length>0)return{correct:false,feedback:'证据链不完整。还需'+missing.length+'个关键步骤。检查所有已知条件是否都已使用。',errorType:'condition_missing'};return{correct:false,feedback:'证据链有多余步骤。精简推理，每一步都应有明确目的。',errorType:'model_error'}}let allMatch=true;for(let i=0;i<expected.length;i++){if(chain[i]?.id!==expected[i]){allMatch=false;break}}if(allMatch)return{correct:true,feedback:lvl.successMsg||'完美的证明链！每一步推理都有充分理由。'};for(let i=0;i<expected.length;i++){if(chain[i]?.id!==expected[i])return{correct:false,feedback:'第'+(i+1)+'步推理不正确。检查证明顺序：先确认已知条件，再用判定定理，最后得结论。',errorType:'correspondence_error'}}return{correct:false,feedback:'证明链顺序需要调整。',errorType:'expression_gap'}},
+
+validateSlider(lvl){const sv=this.sliderValues,targets=lvl.targets||[];if(lvl.funcType==='quadratic'){const a=sv.a,h=sv.h,k=sv.k;let hitsAll=true;for(const t of targets){if(Math.abs(a*Math.pow(t.x-h,2)+k-t.y)>.12){hitsAll=false;break}}if(hitsAll)return{correct:true,feedback:lvl.successMsg||'完美！抛物线穿过所有目标点。'};return{correct:false,feedback:'抛物线未穿过所有目标。单独调整每个参数：a改变开口，h左右平移，k上下平移。',errorType:'model_error'}}else if(lvl.funcType==='inverse'){const kv=sv.kv;let hitsAll=true;for(const t of targets){if(Math.abs(t.x*t.y-kv)>.15){hitsAll=false;break}}if(hitsAll)return{correct:true,feedback:lvl.successMsg||'正确！k=x·y，反比例函数的核心秘密已被你掌握。'};return{correct:false,feedback:'k还未正确。反比例函数y=k/x中，k等于x与y的乘积。',errorType:'calculation_error'}}else{const k=sv.k,b=sv.b;let hitsAll=true;for(const t of targets){if(Math.abs(k*t.x+b-t.y)>.12){hitsAll=false;break}}if(hitsAll)return{correct:true,feedback:lvl.successMsg||'轨道完美对接！成功调试了斜率和截距。'};if(targets.length>=2){const t0=targets[0],t1=targets[1];const expK=(t1.y-t0.y)/(t1.x-t0.x),expB=t0.y-expK*t0.x;const kC=Math.abs(k-expK)<.15,bC=Math.abs(b-expB)<.2;if(!kC&&!bC)return{correct:false,feedback:'斜率k和截距b都需要调整。k=(y₂-y₁)/(x₂-x₁)。',errorType:'model_error'};if(!kC)return{correct:false,feedback:'斜率k不正确。期望约'+expK.toFixed(1)+'，当前'+k.toFixed(1)+'。',errorType:'calculation_error'};if(!bC)return{correct:false,feedback:'截距b不正确。期望约'+expB.toFixed(1)+'，当前'+b.toFixed(1)+'。',errorType:'calculation_error'}}return{correct:false,feedback:'继续调整参数。观察直线的倾斜程度和y轴交点。',errorType:'model_error'}}},
+
+// Helpers
+useHint(){if(this.state!=='level')return;this.hintsUsed++;this.hintLevel=Math.min(this.hintLevel+1,4);const lvl=this.currentLevel;const hints=lvl.hints||['仔细观察题目给出的已知条件。','可以试试数学之眼来发现隐藏的关系。','考虑这个知识点对应的定理或判定方法。','完整思路：从已知出发，逐步推导到结论。'];const box=document.createElement('div');box.className='hint-box';box.textContent='💡 Lv'+this.hintLevel+' '+hints[Math.min(this.hintLevel-1,hints.length-1)];document.getElementById('level-panel').appendChild(box);setTimeout(()=>box.remove(),5000);document.getElementById('hint-btn').textContent='💡提示('+this.hintsUsed+')';Sound.hint()},
+toggleMathEye(){this.mathEye=!this.mathEye;if(this.mathEye)this.progress.mathEyeUses=(this.progress.mathEyeUses||0)+1;const btn=document.getElementById('math-eye-btn');btn.textContent=this.mathEye?'👁数学之眼(开)':'👁数学之眼';btn.style.borderColor=this.mathEye?'#f0c060':'';const lvl=this.currentLevel;if(lvl.type==='geometry_proof')this.drawGeometryCanvas(lvl);else if(lvl.type==='function_slider')this.drawFunctionCanvas(lvl);Sound.click()},
+resetLevel(){this.proofChain=[];this.matchAnswer=null;this.selectedEvidence=null;const lvl=this.currentLevel;this.sliderValues={k:lvl.params?.k||0,b:lvl.params?.b||0,a:lvl.params?.a||1,h:lvl.params?.h||0,kv:lvl.params?.kv||1};this.mathEye=false;this.hintsUsed=0;this.hintLevel=0;document.getElementById('math-eye-btn').textContent='👁数学之眼';document.getElementById('math-eye-btn').style.borderColor='';document.getElementById('hint-btn').textContent='💡提示';this.renderLevel();Sound.click()},
+closeResult(){document.getElementById('result-overlay').style.display='none';this.currentLevelIdx++;this.startLevel()},
+retryLevel(){document.getElementById('result-overlay').style.display='none';this.resetLevel()},
+
+async completeChapter(){
+  const ch=CHAPTERS[this.currentChapter];document.getElementById('level-ui').style.display='none';this.state='home';this.showPage('home');
+  await this.playCG('chapterClear');
+  await this.playDialog(STORY.chapterComplete);
+  // Check if final chapter completed
+  if(this.currentChapter===6&&(this.progress.mastery?.ch6?.completed||0)>=4&&!this.storyFlags.completedGame){
+    this.storyFlags.completedGame=true;
+    await this.playDialog(STORY.finalChapter);
+    await this.playCG('star_sky');
+  }
+  this.checkAllAchievements();Sound.success();
+},
+
+exitLevel(){document.getElementById('level-ui').style.display='none';document.getElementById('result-overlay').style.display='none';this.state='home';this.showPage('home');Sound.click()},
+
+// Panels
+showKnowledge(){document.getElementById('knowledge-panel').style.display='block';const tree=document.getElementById('knowledge-tree');const M=this.progress.mastery||{};const codeToCh={T1:2,T2:2,T3:2,T4:2,T5:2,T6:3,T7:3,T8:3,T9:3,T10:3,T11:4,T12:4,F0:1,F1:1,F2:1,F3:1,F4:1,F5:1,F6:1,F7:5,F8:5,F9:5,F10:6,F11:6,F12:6,F13:6,F14:6};const getM=(code)=>{const chId=codeToCh[code];if(chId===undefined)return 0;const key='ch'+chId;return(M[key]?.stars||0)*33};tree.innerHTML=KNOWLEDGE_TREE.map(k=>{const m=getM(k.code);return'<div class="knowledge-item"><div style="width:40px;height:40px;border-radius:50%;border:3px solid '+(m>55?'var(--green)':m>20?'var(--warn)':'var(--border)')+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">'+m+'%</div><div style="flex:1"><div style="font-weight:600;font-size:13px">'+k.name+'<span style="font-size:9px;color:var(--text2);margin-left:4px">'+k.code+'</span></div><div style="font-size:10px;color:var(--text2)">'+k.desc+'</div></div><div style="font-size:9px;color:var(--text2);background:var(--panel);padding:2px 7px;border-radius:6px">'+k.group+'</div><div class="k-bar"><div class="k-bar-fill" style="width:'+m+'%;background:'+(m>55?'var(--green)':m>20?'var(--warn)':'var(--accent)')+'"></div></div></div>'}).join('')},
+showMistakes(){document.getElementById('mistakes-panel').style.display='block';const list=document.getElementById('mistakes-list'),noMsg=document.getElementById('no-mistakes-msg');document.getElementById('mistake-count').textContent=this.mistakes.length;if(this.mistakes.length===0){noMsg.style.display='block';list.innerHTML='';return}noMsg.style.display='none';list.innerHTML=this.mistakes.slice().reverse().map((m,i)=>{const idx=this.mistakes.length-1-i;return'<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px"><div style="font-size:10px;color:var(--text2);margin-bottom:2px">'+m.chapter+' · '+m.timestamp+'</div><div style="font-weight:600;font-size:13px">'+m.level+'</div><div style="font-size:10px;color:var(--warn);margin:3px 0">错因：'+(ERROR_LABELS[m.errorType]||m.errorType)+'</div><div style="font-size:11px;color:var(--text2);margin-bottom:6px">'+m.feedback+'</div><button class="btn btn-outline btn-sm" onclick="Game.retryMistake('+idx+')">🔄重修此关</button></div>'}).join('')},
+retryMistake(idx){const m=this.mistakes[idx];if(!m)return;document.getElementById('mistakes-panel').style.display='none';this.currentChapter=m.chapterId;this.currentLevelIdx=m.levelIdx;document.getElementById('chapter-intro').style.display='none';this._retryingMistake=true;this.startLevel();this.saveProgress()},
+showAchievements(){document.getElementById('achievements-panel').style.display='block';const list=document.getElementById('achievements-list');const unlocked=new Set(this.achievementsUnlocked);list.innerHTML=ACHIEVEMENTS.map(a=>{const e=unlocked.has(a.id);return'<div class="knowledge-item" style="opacity:'+(e?1:.4)+'"><span style="font-size:30px">'+(e?a.icon:'🔒')+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+(e?a.name:'???')+'</div><div style="font-size:10px;color:var(--text2)">'+(e?a.desc:'继续游戏以解锁')+'</div></div>'+(e?'<span style="color:var(--gold);font-size:16px">✓</span>':'')+'</div>'}).join('')},
+
+checkAllAchievements(){const prev=new Set(this.achievementsUnlocked);for(const ach of ACHIEVEMENTS){if(prev.has(ach.id))continue;if(ach.check(this.progress)){this.achievementsUnlocked.push(ach.id);this.unlockAchievement(ach)}}this.progress.totalAchievements=this.achievementsUnlocked.length;this.updateAllUI()},
+unlockAchievement(ach){Sound.achieve();const toast=document.createElement('div');toast.className='achievement-toast';toast.innerHTML='<span class="ach-icon">'+ach.icon+'</span><div><div class="ach-title">🏆 '+ach.name+'</div><div class="ach-desc">'+ach.desc+'</div></div>';document.getElementById('toast-container').appendChild(toast);setTimeout(()=>toast.remove(),3200)},
+
+saveProgress(){try{const data={totalStars:this.progress.totalStars,dust:this.progress.dust,mastery:this.progress.mastery,completedLevels:this.progress.completedLevels,totalAchievements:this.progress.totalAchievements,noHintStreak:this.progress.noHintStreak,ssaCaught:this.progress.ssaCaught,vertexStreak:this.progress.vertexStreak,mistakesFixed:this.progress.mistakesFixed,explanationCount:this.progress.explanationCount,mathEyeUses:this.progress.mathEyeUses,speedClears:this.progress.speedClears,mistakes:this.mistakes.slice(-60),achievementsUnlocked:this.achievementsUnlocked,storyFlags:this.storyFlags};localStorage.setItem('md_ulti_progress',JSON.stringify(data))}catch(e){}},
+loadProgress(){try{const raw=localStorage.getItem('md_ulti_progress');if(raw){const d=JSON.parse(raw);Object.assign(this.progress,d);this.mistakes=d.mistakes||[];this.achievementsUnlocked=d.achievementsUnlocked||[];if(d.storyFlags)Object.assign(this.storyFlags,d.storyFlags)}}catch(e){}},
+resetProgress(){if(confirm('确定要重置所有进度吗？包括剧情进度、成就、错题记录。此操作不可恢复！')){localStorage.removeItem('md_ulti_progress');this.progress={totalStars:0,dust:0,mastery:{},completedLevels:{},totalAchievements:0,noHintStreak:0,ssaCaught:0,vertexStreak:0,mistakesFixed:0,explanationCount:0,mathEyeUses:0,speedClears:0,currentNoHint:0};this.mistakes=[];this.achievementsUnlocked=[];this.storyFlags={seenOpening:false,metOuluo:false,metLinche:false,metAye:false,metLixia:false,seenHermo:false,completedGame:false};this.updateAllUI();this.renderChapterCards();Sound.click()}},
+updateAllUI(){document.getElementById('total-stars').textContent=this.progress.totalStars||0;document.getElementById('total-dust').textContent=this.progress.dust||0;document.getElementById('total-ach').textContent=this.achievementsUnlocked.length;document.getElementById('mistake-count').textContent=this.mistakes.length;const M=this.progress.mastery||{};let totalM=0,count=0;for(const key of Object.keys(M)){totalM+=(M[key]?.stars||0)*33;count++}const avg=count>0?Math.round(totalM/count):0;const ring=document.getElementById('mastery-ring');ring.textContent=avg+'%';ring.style.borderColor=avg>55?'var(--green)':avg>25?'var(--warn)':'var(--border)'},
+continueOrStart(){const M=this.progress.mastery||{};let hp=false;for(const key of Object.keys(M)){if(M[key]?.completed>0){hp=true;break}}if(hp){for(let i=0;i<CHAPTERS.length;i++){if(this.isChapterUnlocked(i)&&(M['ch'+i]?.completed||0)<CHAPTERS[i].levels.length){this.startChapter(i);return}}this.startChapter(0)}else this.startChapter(0)},
+shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr},
+};
+const CHAPTERS=[{id:0,name:'序章',title:'雨夜的侦探笔记',icon:'🌧️',intro:'雨点打湿了作业本，草稿纸上的三角形忽然发光……\n你被带入了数学之城。欧若导师将引导你完成第一次调查。\n学会区分已知条件和猜测——这是所有推理的起点。',knowledge:'证据意识·变量直观',completionMsg:'你已经学会了观察已知条件、收集证据、验证结论。真正的侦探之旅才刚刚开始！',levels:[{name:'S0-01 高亮条件',type:'pattern_match',objective:'找出题目中的已知条件',question:'以下哪一项是题目给出的已知条件？',subtext:'题目：在△ABC中，AB=AC，∠A=40°',options:[{icon:'📏',text:'AB=AC（题目明确给出的已知条件）'},{icon:'🤔',text:'∠B=∠C（看到等腰三角形就猜测两底角相等）'},{icon:'📐',text:'△ABC是直角三角形（看起来像而已）'}],correctIdx:0,successMsg:'正确！区分"已知"和"看起来像"是数学推理的第一步。',failMsg:'AB=AC是题目明确给出的条件，∠B=∠C需要证明。',hints:['题目中直接写出来的才是已知条件。','看到等腰三角形就默认两底角相等，这其实是需要证明的。']},{name:'S0-02 第一条证据链',type:'geometry_proof',objective:'构建三段推理证明BD=CD',figure:'triangle_isosceles',cards:[{id:'g1',icon:'📋',text:'已知：AB=AC'},{id:'g2',icon:'📋',text:'已知：AD平分∠BAC'},{id:'g3',icon:'🔑',text:'SAS全等判定（两边+夹角）'},{id:'g4',icon:'✅',text:'全等三角形对应边相等→BD=CD'},{id:'w1',icon:'❓',text:'ASA判定（条件不够）'},{id:'w2',icon:'❓',text:'因为BD和CD看起来相等'}],expectedChain:['g1','g2','g3','g4'],shuffled:true,successMsg:'出色的第一次证明！已知条件、判定定理和结论正确连接。',hints:['先收集所有已知条件。','需要证明△ABD≌△ACD→SAS。']},{name:'S0-03 真假线索',type:'pattern_match',objective:'区分有效证据和无效猜测',question:'要证明△ABD≌△ACD，哪一条是有效证据？',subtext:'已知：AB=AC，AD平分∠BAC',options:[{icon:'✅',text:'∠BAD=∠CAD（角平分线定义直接给出）'},{icon:'❌',text:'∠B=60°（没有任何依据的猜测）'}],correctIdx:0,successMsg:'没错！角平分线将角分成两个相等的角，这是最直接的证据。',hints:['角平分线的定义是什么？','不要添加题目没有给出的数字或条件。']},{name:'S0-04 变量小机关',type:'function_slider',objective:'让直线y=kx+b穿过目标点(2,3)',funcType:'linear',params:{k:0,b:0},targets:[{x:2,y:3}],successMsg:'当k=1,b=1时直线穿过(2,3)！变量之间的关系可以用函数来表达。',hints:['把x=2代入，调整k和b使结果等于3。','很多组k和b可以满足条件，试试k=1.5。']},{name:'S0-05 晶核裂缝',type:'geometry_proof',objective:'用SSS判定完成三角形全等证明',figure:'triangle_sss',cards:[{id:'s1',icon:'📋',text:'已知：AB=DE'},{id:'s2',icon:'📋',text:'已知：BC=EF'},{id:'s3',icon:'📋',text:'已知：AC=DF'},{id:'s4',icon:'🔑',text:'SSS全等判定（三边对应相等）'},{id:'s5',icon:'✅',text:'∴△ABC≌△DEF'},{id:'w3',icon:'❓',text:'SAS判定（缺少夹角条件）'}],expectedChain:['s1','s2','s3','s4','s5'],shuffled:true,successMsg:'序章完成！证据链构建方法已掌握。数学之城大门打开了！',hints:['三边分别对应相等→用SSS。']}]},{id:1,name:'第一章',title:'直线之城',icon:'🚂',intro:'直线之城的列车失去了斜率！\n林澈将与你搭档，用函数图像恢复城市的交通系统。\n理解k（斜率）和b（截距），让列车重新出发。',knowledge:'一次函数·斜率截距',completionMsg:'你已经理解了k控制斜率、b控制截距。直线之城的列车重新运行了！',levels:[{name:'L011 斜率探索',type:'function_slider',objective:'调节k让直线过点(2,2)',funcType:'linear',params:{k:0,b:0},targets:[{x:2,y:2}],successMsg:'k=1时直线穿过(2,2)！斜率决定了线的倾斜程度。',hints:['试试k=1。','k>0向上，k<0向下。']},{name:'L012 截距站台',type:'function_slider',objective:'调节b让直线经过(0,3)',funcType:'linear',params:{k:1,b:0},targets:[{x:0,y:3}],successMsg:'b=3！b就是直线与y轴交点的y坐标。',hints:['(0,3)在y轴上，b=3。']},{name:'L013 双点挑战',type:'function_slider',objective:'让直线同时穿过(1,2)和(3,4)',funcType:'linear',params:{k:0,b:0},targets:[{x:1,y:2},{x:3,y:4}],successMsg:'k=1,b=1！y=x+1是唯一解。',hints:['斜率=(4-2)/(3-1)=1。','代入一点求b。']},{name:'L014 负斜率',type:'function_slider',objective:'让直线穿过(0,4)和(4,0)',funcType:'linear',params:{k:0,b:2},targets:[{x:0,y:4},{x:4,y:0}],successMsg:'k=-1,b=4！负斜率→x增大y减小。y=-x+4',hints:['下降趋势→k<0。','b=4（y轴交点）。']},{name:'L015 更多练习',type:'function_slider',objective:'直线过(-2,0)和(1,6)',funcType:'linear',params:{k:0,b:0},targets:[{x:-2,y:0},{x:1,y:6}],successMsg:'y=2x+4！k=6/3=2，b=4。',hints:['斜率=(6-0)/(1-(-2))=2。']},{name:'L016 截距盗贼',type:'function_slider',objective:'击败截距盗贼：过(2,5)和(-1,-1)',funcType:'linear',params:{k:0,b:0},targets:[{x:2,y:5},{x:-1,y:-1}],successMsg:'y=2x+1！你击败了截距盗贼！',hints:['斜率=(5-(-1))/(2-(-1))=2。']}]},{id:2,name:'第二章',title:'几何遗迹',icon:'🔺',intro:'几何遗迹中的三角桥正在坍塌！\n桥匠穆棱需要你的帮助。\n从稳定性、边角关系到全等直观，搭建几何基础。',knowledge:'三角形·全等基础',completionMsg:'你已经理解了三角形的基本结构和全等直观概念。为证明庭打下了坚实基础！',levels:[{name:'L021 稳定性测试',type:'pattern_match',objective:'判断哪种结构最稳定',question:'桥梁应使用哪种结构确保稳定性？',options:[{icon:'🔺',text:'三角形桁架（三边固定后形状唯一确定）'},{icon:'▭',text:'四边形框架（四边固定但角仍可改变）'}],correctIdx:0,successMsg:'三角形最稳定！三边确定后形状唯一。',hints:['三角形三边固定后形状不能变。']},{name:'L022 三边石阵',type:'pattern_match',objective:'判断能否构成三角形',question:'哪组三条线段可以构成三角形？',subtext:'条件：任意两边之和大于第三边',options:[{icon:'✅',text:'3cm,4cm,5cm（3+4>5✓）'},{icon:'❌',text:'2cm,3cm,6cm（2+3<6）'},{icon:'❌',text:'1cm,2cm,3cm（1+2=3退化）'}],correctIdx:0,successMsg:'3-4-5是著名的勾股数！任意两边之和必须大于第三边。',hints:['检查三条最短边之和是否大于最长边。']},{name:'L023 内角祭坛',type:'pattern_match',objective:'求三角形内角和',question:'三角形已知两角50°和60°，第三个角？',options:[{icon:'✅',text:'70°（180-50-60=70）'},{icon:'❌',text:'110°（忘了用180减）'}],correctIdx:0,successMsg:'三角形内角和恒为180°！',hints:['三个角拼在一起正好是平角180°。']},{name:'L024 对应边角',type:'geometry_proof',objective:'匹配全等三角形的对应关系',figure:'triangle_sss',cards:[{id:'c1',icon:'📋',text:'AB=DE（对应边1）'},{id:'c2',icon:'📋',text:'BC=EF（对应边2）'},{id:'c3',icon:'📋',text:'AC=DF（对应边3）'},{id:'c4',icon:'🔑',text:'SSS→△ABC≌△DEF'},{id:'c5',icon:'✅',text:'全等得证'}],expectedChain:['c1','c2','c3','c4','c5'],shuffled:true,successMsg:'对应关系完全正确！A↔D,B↔E,C↔F',hints:['注意对应顶点顺序。']},{name:'L025 遗迹修复',type:'geometry_proof',objective:'用SAS证明三角形全等来修复桥梁',figure:'triangle_sas',cards:[{id:'sa1',icon:'📋',text:'AB=DE（对应边）'},{id:'sa2',icon:'📋',text:'∠A=∠D（夹角）'},{id:'sa3',icon:'📋',text:'AC=DF（对应边）'},{id:'sa4',icon:'🔑',text:'SAS判定（两边及夹角）'},{id:'sa5',icon:'✅',text:'∴△ABC≌△DEF'}],expectedChain:['sa1','sa2','sa3','sa4','sa5'],shuffled:true,successMsg:'桥梁修复了！SAS判定运用正确。',hints:['SAS中A必须是两条边的夹角。']},{name:'L026 遗迹Boss',type:'geometry_proof',objective:'综合运用SSS和SAS完成修复',figure:'triangle_isosceles',cards:[{id:'b1',icon:'📋',text:'已知：AB=AC'},{id:'b2',icon:'📋',text:'已知：AD平分∠BAC'},{id:'b3',icon:'📋',text:'AD=AD（公共边）'},{id:'b4',icon:'🔑',text:'∠BAD=∠CAD（角平分线）'},{id:'b5',icon:'🔑',text:'SAS判定→△ABD≌△ACD'},{id:'b6',icon:'✅',text:'∴BD=CD'}],expectedChain:['b1','b2','b3','b4','b5','b6'],shuffled:true,successMsg:'综合运用几何遗迹学到的所有技能！',hints:['AD是公共边→SAS需要的第三条边。']}]},{id:3,name:'第三章',title:'证明庭',icon:'⚖️',intro:'审判长赛因要求每一份证明都必须合法。\n"看起来相等"不能作为证据。\n学会用严格的判定条件，成为一名合格的数学律师。',knowledge:'全等判定·证明表达',completionMsg:'你已经可以区分不同的全等判定条件，写出有说服力的几何证明了！',levels:[{name:'L031 判定选择',type:'pattern_match',objective:'为条件选择正确的全等判定',question:'已知两角及其夹边对应相等，用哪个判定？',options:[{icon:'✅',text:'ASA（两角+夹边）'},{icon:'❌',text:'SAS（条件不匹配）'},{icon:'❌',text:'SSA（无效判定！）'}],correctIdx:0,successMsg:'ASA——两角及其夹边。"夹"表示边被两角夹在中间。',hints:['注意"夹边"——边在角B和角C之间。']},{name:'L032 SSA陷阱',type:'pattern_match',objective:'识别SSA不能判定全等',question:'已知两边和其中一边的对角（SSA），能否判定全等？',subtext:'数学中最著名的"不成立"判定',options:[{icon:'✅',text:'不能！SSA存在歧义，同样条件可能对应两种三角形'},{icon:'❌',text:'可以，反正两边一角都知道了'}],correctIdx:0,successMsg:'警觉！SSA确实不能保证全等。第三个顶点可能有两个位置。',hints:['非夹角角度固定时，第三个顶点有两个可能位置。']},{name:'L033 ASA案件',type:'geometry_proof',objective:'用ASA完成全等证明',figure:'triangle_sas',cards:[{id:'a1',icon:'📋',text:'∠B=∠E（对应角）'},{id:'a2',icon:'📋',text:'BC=EF（夹边）'},{id:'a3',icon:'📋',text:'∠C=∠F（对应角）'},{id:'a4',icon:'🔑',text:'ASA判定（两角及夹边）'},{id:'a5',icon:'✅',text:'∴△ABC≌△DEF'}],expectedChain:['a1','a2','a3','a4','a5'],shuffled:true,successMsg:'ASA运用正确！BC被∠B和∠C夹在中间。',hints:['ASA中边必须被两个角"夹"在中间。']},{name:'L034 HL特别庭',type:'geometry_proof',objective:'用HL判定直角三角形全等',figure:'triangle_right',cards:[{id:'h1',icon:'📋',text:'∠C=∠F=90°（直角）'},{id:'h2',icon:'📋',text:'AB=DE（斜边相等）'},{id:'h3',icon:'📋',text:'BC=EF（直角边相等）'},{id:'h4',icon:'🔑',text:'HL判定（斜边+直角边）'},{id:'h5',icon:'✅',text:'∴Rt△ABC≌Rt△DEF'}],expectedChain:['h1','h2','h3','h4','h5'],shuffled:true,successMsg:'HL是直角三角形的专属特权！',hints:['HL只适用于直角三角形。']},{name:'L035 证明庭辩论',type:'pattern_match',objective:'判断证明步骤是否合法',question:'能否写"显然△ABC≌△DEF"而不给判定条件？',options:[{icon:'✅',text:'不能！每步都需合法判定条件支撑'},{icon:'❌',text:'可以，如果图形上明显能看出来'}],correctIdx:0,successMsg:'证明庭不接受"显然"！每步推理都必须引用合法判定。',hints:['赛因的原话："法庭不采纳看起来。"']},{name:'L036 赫尔墨之影',type:'geometry_proof',objective:'抵抗错误诱导，完成等腰证明',figure:'triangle_isosceles',cards:[{id:'hm1',icon:'📋',text:'AB=AC（等腰条件）'},{id:'hm2',icon:'📋',text:'∠B=∠C（等边对等角）'},{id:'hm3',icon:'🔑',text:'等腰三角形性质：两底角相等'},{id:'hm4',icon:'✅',text:'∴∠B=∠C得证'},{id:'hw1',icon:'❓',text:'直接写"看起来∠B=∠C"'}],expectedChain:['hm1','hm3','hm2','hm4'],shuffled:true,successMsg:'抵抗了赫尔墨之影的诱惑！"看起来相等"永远不能替代证明。',hints:['赫尔墨想让你跳过推理→这是陷阱！']}]},{id:4,name:'第四章',title:'比例荒原',icon:'📐',intro:'沙漠中的地图比例失控了！\n用相似三角形测量无法接近的高塔。\n相似比是你最强大的工具。',knowledge:'相似·比例线段',completionMsg:'你理解了相似的核心：对应角相等，对应边成比例。',levels:[{name:'L041 相似识别',type:'pattern_match',objective:'判断图形是否相似',question:'两个正方形边长2cm和4cm，相似吗？',options:[{icon:'✅',text:'相似！所有正方形都相似'},{icon:'❌',text:'不相似，大小不同'}],correctIdx:0,successMsg:'相似只看形状和比例，不看绝对大小。',hints:['2cm正方形放大2倍就是4cm，形状完全相同。']},{name:'L042 影塔测量',type:'pattern_match',objective:'用相似比计算塔高',question:'2m杆子影子3m，塔影子30m，塔高？',options:[{icon:'✅',text:'20m（2/3=x/30）'},{icon:'❌',text:'45m'},{icon:'❌',text:'15m'}],correctIdx:0,successMsg:'用相似测高！古希腊人就这么测金字塔。',hints:['杆高/杆影=塔高/塔影。']},{name:'L043 对应边比例',type:'pattern_match',objective:'注意相似对应关系',question:'△ABC∽△DEF，相似比2:1。AB=6，DE=?',options:[{icon:'✅',text:'DE=3（6÷2）'},{icon:'❌',text:'DE=12（方向反了）'}],correctIdx:0,successMsg:'AB:DE=2:1→6/DE=2→DE=3。',hints:['△ABC是△DEF的2倍。']},{name:'L044 AA相似',type:'pattern_match',objective:'用AA判定相似',question:'∠A=∠D，∠B=∠E，能否判定△ABC∽△DEF？',options:[{icon:'✅',text:'可以（AA相似，第三角自动相等）'},{icon:'❌',text:'不能（还需要边成比例）'}],correctIdx:0,successMsg:'AA相似：两角相等就足够！第三角自动相等。',hints:['三角形内角和180°保证第三角自动相等。']},{name:'L045 比例Boss',type:'geometry_proof',objective:'综合运用相似知识完成测量',figure:'similar_triangles',cards:[{id:'p1',icon:'📋',text:'∠A=∠D（太阳角度相同）'},{id:'p2',icon:'📋',text:'∠B=∠E（都是直角）'},{id:'p3',icon:'🔑',text:'AA相似→△ABC∽△DEF'},{id:'p4',icon:'🔑',text:'对应边成比例：AB/DE=BC/EF'},{id:'p5',icon:'✅',text:'代入求解→高度已算出'}],expectedChain:['p1','p2','p3','p4','p5'],shuffled:true,successMsg:'用相似原理测量了无法接近的目标！',hints:['先证明AA相似，再用比例列方程。']}]},{id:5,name:'第五章',title:'倒影港',icon:'🌊',intro:'港口的水位与吊臂压力之间存在神秘的恒定关系。\n发现反比例函数y=k/x，理解"乘积不变"的规律。',knowledge:'反比例函数',completionMsg:'xy=k——反比例函数的秘密。理解乘积不变的规律后，倒影港恢复了运转。',levels:[{name:'L051 恒积发现',type:'function_slider',objective:'找到y=k/x经过点(2,3)',funcType:'inverse',params:{kv:1},targets:[{x:2,y:3}],successMsg:'k=6！2×3=6。x和y的乘积始终等于k。',hints:['在y=k/x中，k=x·y。']},{name:'L052 k的符号',type:'function_slider',objective:'让图像经过(-3,2)',funcType:'inverse',params:{kv:1},targets:[{x:-3,y:2}],successMsg:'k=-6！k<0时图像在二四象限。',hints:['(-3)×2=-6。']},{name:'L053 反比例vs负相关',type:'pattern_match',objective:'区分反比例和普通负相关',question:'y=-2x+10，x增大y减小。是反比例函数吗？',options:[{icon:'✅',text:'不是！反比例须是y=k/x（乘积为常数）'},{icon:'❌',text:'是，x增大y减小就是'}],correctIdx:0,successMsg:'关键区别：反比例函数必须是y=k/x。',hints:['检验xy乘积是否恒定。']},{name:'L054 乘积应用',type:'function_slider',objective:'总路程60km，速度-时间曲线过(30,2)',funcType:'inverse',params:{kv:30},targets:[{x:30,y:2}],successMsg:'k=60！路程=速度×时间，固定60km时成反比例。',hints:['路程=速度×时间→k=30×2。']},{name:'L055 倒影港Boss',type:'function_slider',objective:'找反比例函数过(4,1.5)和(-2,-3)',funcType:'inverse',params:{kv:1},targets:[{x:4,y:1.5},{x:-2,y:-3}],successMsg:'k=6！4×1.5=6=(-2)×(-3)。恒积特性！',hints:['验证两个点的xy乘积是否相同。']}]},{id:6,name:'第六章',title:'抛物线峡谷',icon:'🦅',intro:'风轨断裂，飞艇无法越谷！\n风轨师岚栖教你调整二次函数参数。\n找到最优飞行轨迹，征服抛物线峡谷！',knowledge:'二次函数·顶点最值',completionMsg:'你理解了二次函数的顶点、开口和最值。抛物线不再是抽象符号，而是飞行轨迹！',levels:[{name:'L061 开口探索',type:'function_slider',objective:'抛物线过(0,0)和(2,-4)',funcType:'quadratic',params:{a:1,h:0,k:0},targets:[{x:0,y:0},{x:2,y:-4}],successMsg:'y=-x²！开口向下。|a|越大抛物线越窄。',hints:['开口向下→a<0。']},{name:'L062 顶点定位',type:'function_slider',objective:'顶点在(1,3)，且经过(0,4)',funcType:'quadratic',params:{a:1,h:0,k:0},targets:[{x:1,y:3},{x:0,y:4}],successMsg:'y=-(x-1)²+3！顶点式y=a(x-h)²+k一目了然！',hints:['顶点式：顶点=(h,k)。']},{name:'L063 最大值竞技',type:'function_slider',objective:'最高点经过(2,5)',funcType:'quadratic',params:{a:-1,h:2,k:0},targets:[{x:2,y:5}],successMsg:'y=-(x-2)²+5！顶点(2,5)是最大值。',hints:['最大值=顶点！让k=5,h=2。']},{name:'L064 飞艇越谷',type:'function_slider',objective:'起飞(0,1)→最高(3,4)→降落(6,1)',funcType:'quadratic',params:{a:-1,h:3,k:0},targets:[{x:0,y:1},{x:3,y:4},{x:6,y:1}],successMsg:'y=-(1/3)(x-3)²+4！飞艇安全越谷。',hints:['最高点=顶点→h=3,k=4。对称轴x=3。']},{name:'L065 峡谷Boss',type:'function_slider',objective:'最优轨迹：过(0,0)最高(4,8)降(8,0)',funcType:'quadratic',params:{a:-1,h:4,k:0},targets:[{x:0,y:0},{x:4,y:8},{x:8,y:0}],successMsg:'y=-0.5(x-4)²+8！抛物线峡谷征服！',hints:['顶点(4,8)→h=4,k=8。','代入(0,0)求a: 0=a×16+8→a=-0.5。']}]}];
+
+// ==================== 启动游戏 ====================
+window.addEventListener('DOMContentLoaded',()=>{Game.init()});
+</script>
+</body>
+</html>
